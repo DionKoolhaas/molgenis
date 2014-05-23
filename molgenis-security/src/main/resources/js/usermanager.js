@@ -9,8 +9,8 @@
 	function setViewState(viewState) {
 		// viewState: "users" | "groups"
 		$.ajax({
-			type : "PUT",
-			url : '/menu/admin/usermanager' + '/setViewState/' + viewState,
+			type : 'PUT',
+			url : molgenis.getContextUrl() + '/setViewState/' + viewState,
 		});
 	}
 
@@ -20,10 +20,11 @@
 	function getCreateForm(type) {
 		$.ajax({
 			type : 'GET',
-			url : 'http://localhost:8080/api/v1/molgenis' + type + '/create',
+			url : '/api/v1/molgenis' + type + '/create',
 			success : function(text) {
 				$('#managerModalTitle').html('Add ' + type);
 				$('#controlGroups').html(text);
+				
 			}
 		});
 	}
@@ -34,7 +35,7 @@
 	function getEditForm(id, type) {
 		$.ajax({
 			type : 'GET',
-			url : 'http://localhost:8080/api/v1/molgenis' + type + '/' + id + '/edit',
+			url : '/api/v1/molgenis' + type + '/' + id + '/edit',
 			success : function(text) {
 				$('#managerModalTitle').html('Edit ' + type);
 				$('#controlGroups').html(text);
@@ -50,7 +51,7 @@
 		var active = checkbox.checked;
 		$.ajax({
 			type : 'PUT',
-			url : '/menu/admin/usermanager' + '/setActivation/' + type + '/' + id + '/' + active,
+			url : molgenis.getContextUrl() + '/setActivation/' + type + '/' + id + '/' + active,
 			success : function(text) {
 				$('#groupRow' + id).addClass('success')
 				$('#userRow' + id).addClass('success');
@@ -68,8 +69,8 @@
 	function changeGroupMembership(userId, groupId, checkbox) {
 		var member = checkbox.checked;
 		$.ajax({
-			type : "PUT",
-			url : "/menu/admin/usermanager" + "/changeGroupMembership/" + userId + "/" + groupId + "/" + member,
+			type : 'PUT',
+			url : molgenis.getContextUrl() + '/changeGroupMembership/' + userId + '/' + groupId + '/' + member,
 			success : function(text) {
 				// $('#controlGroups').html(text);
 				$('#userRow' + userId).addClass('success');
@@ -82,6 +83,7 @@
 	}
 
 	$(function() {
+		
 		$('#usersTab a').click(function(e) {
 			setViewState('users');
 		});
@@ -127,10 +129,13 @@
 			e.preventDefault();
 			e.stopPropagation();
 			$('#entity-form').submit();
+		});
+
+		$(document).on('onFormSubmitSuccess', function() {
 			$('#usermanagerModal').modal('toggle');
 			location.reload();
 		});
-
+		
 		$('#managerModal').keydown(function(e) {
 			// prevent modal being submitted if one presses enter
 			if (event.keyCode === 13) {

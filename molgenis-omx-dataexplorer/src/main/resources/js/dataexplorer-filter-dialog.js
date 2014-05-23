@@ -11,7 +11,7 @@
 	
 	molgenis.dataexplorer = molgenis.dataexplorer || {};
 	molgenis.dataexplorer.filter = molgenis.dataexplorer.filter || {};
-	var self = molgenis.dataexplorer.filter.form = molgenis.dataexplorer.filter.form || {};
+	var self = molgenis.dataexplorer.filter.dialog = molgenis.dataexplorer.filter.dialog || {};
 	
 	self.openFilterModal = function(attribute, attributeFilter) {
 		var modal = createFilterModal();
@@ -30,7 +30,7 @@
 		var modal = $('#filter-modal');
 		if(!modal.length) {
 			var items = [];
-			items.push('<div class="modal hide medium" id="filter-modal" tabindex="-1">');
+			items.push('<div class="modal hide large" id="filter-modal" tabindex="-1">');
 			items.push('<div class="modal-header">');
 			items.push('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>');
 			items.push('<h3 class="filter-title"></h3>');

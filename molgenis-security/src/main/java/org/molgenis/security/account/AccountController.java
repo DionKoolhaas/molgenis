@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -61,9 +60,6 @@ public class AccountController
 
 	@Autowired
 	private CaptchaService captchaService;
-
-	@Autowired
-	private PasswordEncoder passwordEncoder;
 
 	@Autowired
 	private RedirectStrategy redirectStrategy;
@@ -226,7 +222,7 @@ public class AccountController
 	{
 		MolgenisUser user = new MolgenisUser();
 		user.setUsername(request.getUsername());
-		user.setPassword(passwordEncoder.encode(request.getPassword()));
+		user.setPassword(request.getPassword());
 		user.setEmail(request.getEmail());
 		user.setPhone(request.getPhone());
 		user.setFax(request.getFax());

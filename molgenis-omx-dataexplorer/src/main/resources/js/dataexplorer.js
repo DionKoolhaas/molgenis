@@ -201,12 +201,11 @@
 		
 		$(document).on('clickAttribute', function(e, data) {
 			if(data.attribute.fieldType !== 'COMPOUND')
-				self.filter.form.openFilterModal(data.attribute, attributeFilters[data.attribute.href]);
+				self.filter.dialog.openFilterModal(data.attribute, attributeFilters[data.attribute.href]);
 		});
 		
 		var container = $("#plugin-container");
 		
-		// use chosen plugin for data set select
 		if ($('#dataset-select').length > 0) {
 			$('#dataset-select').select2({ width: 'resolve' });
 			$('#dataset-select').change(function() {
@@ -228,7 +227,7 @@
 		$(container).on('click', '.feature-filter-edit', function(e) {
 			e.preventDefault();
 			var filter = attributeFilters[$(this).data('href')];
-			self.filter.form.openFilterModal(filter.attribute, filter);
+			self.filter.dialog.openFilterModal(filter.attribute, filter);
 		});
 		
 		$(container).on('click', '.feature-filter-remove', function(e) {
