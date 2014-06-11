@@ -186,6 +186,25 @@
 		}
 		return 0;
 	};
+	
+	/**
+	 * Checks if the user has write permission on a particular entity
+	 */
+	molgenis.hasWritePermission = function(entityName) {
+		var writable = false;
+		
+		$.ajax({
+			url : '/permission/' + entityName + "/write",
+			dataType : 'json',
+			async : false,
+			success : function(result) {
+				writable = result;
+			}
+		});
+		
+		return writable;
+	}
+	
 }($, window.top.molgenis = window.top.molgenis || {}));
 
 // Add endsWith function to the string class
@@ -221,7 +240,21 @@ function htmlEscape(text) {
  * Create a table cell to show data of a certain type
  * Is used by the dataexplorer and the forms plugin
  */
-function formatTableCellValue(value, dataType) {
+function formatTableCellValue(value, dataType, editable) {
+	
+	if (dataType.toLowerCase() == 'bool') {
+		var checked = (value === true);
+		value = '<input type="checkbox" ';
+		if (checked) {
+			value = value + 'checked ';
+		}
+		if (editable !== true) {
+			value = value + 'disabled="disabled"';
+		}
+
+		return value + '/>';
+	}
+	
 	if (!value) {
 		return '';
 	}
@@ -232,15 +265,6 @@ function formatTableCellValue(value, dataType) {
 
 	} else if (dataType.toLowerCase() == "email") {
 		value = '<a href="mailto:' + value + '">' + htmlEscape(value) + '</a>';
-
-	} else if (dataType.toLowerCase() == 'bool') {
-		var checked = (value === true);
-		value = '<input type="checkbox" disabled="disabled" ';
-		if (checked) {
-			value = value + 'checked ';
-		}
-
-		value = value + '/>';
 
 	} else if (dataType.toLowerCase() != 'html') {
 
@@ -480,5 +504,22 @@ $(function() {
 		//send request and remove form from dom
 		$('<form action="' + url + '" method="' + method + '">').html(
 				inputs.join('')).appendTo('body').submit().remove();
+	};
+
+	// serialize form as json object
+	$.fn.serializeObject = function() {
+		var o = {};
+		var a = this.serializeArray();
+		$.each(a, function() {
+			if (o[this.name] !== undefined) {
+				if (!o[this.name].push) {
+					o[this.name] = [ o[this.name] ];
+				}
+				o[this.name].push(this.value || '');
+			} else {
+				o[this.name] = this.value || '';
+			}
+		});
+		return o;
 	};
 });
