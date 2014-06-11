@@ -21,6 +21,7 @@
 		<script src="/js/bootstrap.min.js"></script>
 		<script src="/js/jquery.validate.min.js"></script>
 		<script src="/js/molgenis.js"></script>
+		<script src="/js/restclient.js"></script>
 	<#if context_url??>
 		<script>top.molgenis.setContextUrl('${context_url}');</script>
 	</#if>
