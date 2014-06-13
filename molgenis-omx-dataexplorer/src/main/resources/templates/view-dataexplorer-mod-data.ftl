@@ -63,13 +63,13 @@
 		      		<div class="control-group">
 			      		<label class="control-label" for="galaxy-export-url">Galaxy server URL *</label>
 					    <div class="controls">
-					    	<input type="text" id="galaxy-export-url" name="galaxyUrl" <#if galaxyUrl??>value="${galaxyUrl?html}" </#if>required>
+					    	<input type="text" id="galaxy-export-url" name="galaxyUrl" <#if galaxyUrl??>value="${galaxyUrl?html}" </#if>required><span class="help-block">e.g. https://usegalaxy.org/</span>
 					    </div>
 		      		</div>
 		      		<div class="control-group">
 		      			<label class="control-label" for="galaxy-export-api-key">Galaxy API key *</label>
 					    <div class="controls">
-					    	<input type="password" id="galaxy-export-api-key" name="galaxyApiKey" <#if galaxyApiKey??>value="${galaxyApiKey?html}" </#if>required>
+					    	<input type="password" id="galaxy-export-api-key" name="galaxyApiKey" <#if galaxyApiKey??>value="${galaxyApiKey?html}" </#if>required><span class="help-block">See 'Select API Keys' in menu 'User' on e.g. https://usegalaxy.org/</span>
 					    </div>
 		      		</div>
 				</div>
@@ -94,14 +94,22 @@
 		$.ajax("/js/dataexplorer-data.js", {'cache': true}))
 		.done(function() {
 			<#-- create genome browser -->
-		    molgenis.dataexplorer.data.createGenomeBrowser({
-				${initLocation},
-	            coordSystem: ${coordSystem},
-	            chains: ${chains},
-	            sources: ${sources},
-	            browserLinks: ${browserLinks}
-			}, [<#list genomeEntities?keys as entityName>{'name': '${entityName}', 'label': '${genomeEntities[entityName]}'}<#if entityName_has_next>,</#if></#list>]);
-			
+            if(molgenis.dataexplorer.data.doShowGenomeBrowser() == true)
+            {
+                molgenis.dataexplorer.data.createGenomeBrowser(
+                {
+                    ${initLocation},
+                    coordSystem: ${coordSystem},
+                    chains: ${chains},
+                    sources: ${sources},
+                    browserLinks: ${browserLinks}
+                }, [<#list genomeEntities?keys as entityName>{'name': '${entityName}', 'label': '${genomeEntities[entityName]}'}<#if entityName_has_next>,</#if></#list>]);
+            }
+            else
+            {
+                $('#genomebrowser').css('display', 'none');
+            }
+
 			<#-- create data table -->
 			var tableEditable = ${tableEditable?string('true', 'false')};
 			if (tableEditable) {
