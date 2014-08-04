@@ -10,6 +10,7 @@
 	"iThing-min.css",
 	"bootstrap-switch.min.css",
 	"dataexplorer.css",
+	"dataexplorer-filter.css",
 	"diseasematcher.css"]>
 <#assign js=[
 	"jquery-ui-1.9.2.custom.min.js",
@@ -26,7 +27,8 @@
 	"jquery.molgenis.xrefmrefsearch.js",
 	"dataexplorer.js",
 	"jquery.molgenis.table.js",
-	"handlebars-v1.3.0.js"]>
+	"handlebars-v1.3.0.js",
+	"custom.js"]>
 
 <@header css js/>
     <script>
