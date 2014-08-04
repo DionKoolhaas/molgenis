@@ -60,6 +60,7 @@ public class GafListFileRepositoryTest
 		assertEquals(barcode1, "AGI 1 AAGGTTCC");
 		assertEquals(barcode, "AAGGTTCC");
 		assertEquals(barcodeType, "AGI");
+		
 		assertTrue(it.hasNext());
 		it.next();
 		assertTrue(it.hasNext());
