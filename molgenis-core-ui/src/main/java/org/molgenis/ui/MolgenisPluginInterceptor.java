@@ -67,7 +67,8 @@ public class MolgenisPluginInterceptor extends HandlerInterceptorAdapter
 		Object bean = ((HandlerMethod) handler).getBean();
 		if (!(bean instanceof MolgenisPluginController))
 		{
-			throw new RuntimeException("controller does not implement " + MolgenisPluginController.class.getSimpleName());
+			throw new RuntimeException("controller does not implement "
+					+ MolgenisPluginController.class.getSimpleName());
 		}
 		return (MolgenisPluginController) bean;
 	}

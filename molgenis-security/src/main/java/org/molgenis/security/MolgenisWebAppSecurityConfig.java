@@ -1,5 +1,10 @@
 package org.molgenis.security;
 
+import static org.molgenis.framework.ui.ResourcePathPatterns.PATTERN_CSS;
+import static org.molgenis.framework.ui.ResourcePathPatterns.PATTERN_FONTS;
+import static org.molgenis.framework.ui.ResourcePathPatterns.PATTERN_IMG;
+import static org.molgenis.framework.ui.ResourcePathPatterns.PATTERN_JS;
+
 import java.util.List;
 
 import javax.servlet.Filter;
@@ -42,7 +47,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
+import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurerAdapter
 {
@@ -60,6 +72,18 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 	@Override
 	protected void configure(HttpSecurity http) throws Exception
 	{
+		// do not write cache control headers for static resources
+		RequestMatcher matcher = new NegatedRequestMatcher(new OrRequestMatcher(new AntPathRequestMatcher(PATTERN_CSS),
+				new AntPathRequestMatcher(PATTERN_JS), new AntPathRequestMatcher(PATTERN_IMG),
+				new AntPathRequestMatcher(PATTERN_FONTS)));
+
+		DelegatingRequestMatcherHeaderWriter cacheControlHeaderWriter = new DelegatingRequestMatcherHeaderWriter(
+				matcher, new CacheControlHeadersWriter());
+
+		// add default header options but use custom cache control header writer
+		http.headers().contentTypeOptions().xssProtection().httpStrictTransportSecurity().frameOptions()
+				.addHeaderWriter(cacheControlHeaderWriter);
+
 		http.addFilterBefore(anonymousAuthFilter(), AnonymousAuthenticationFilter.class);
 		http.authenticationProvider(anonymousAuthenticationProvider());
 
@@ -82,11 +106,13 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 
 		.antMatchers("/account/**").permitAll()
 
-		.antMatchers("/css/**").permitAll()
+		.antMatchers(PATTERN_CSS).permitAll()
 
-		.antMatchers("/img/**").permitAll()
+		.antMatchers(PATTERN_IMG).permitAll()
 
-		.antMatchers("/js/**").permitAll()
+		.antMatchers(PATTERN_JS).permitAll()
+
+		.antMatchers(PATTERN_FONTS).permitAll()
 
 		.antMatchers("/html/**").permitAll()
 
@@ -102,7 +128,11 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 
 		.antMatchers("/permission/**").authenticated()
 
+		.antMatchers("/scripts/**/run").authenticated()
+
 		.anyRequest().denyAll().and()
+
+		.httpBasic().authenticationEntryPoint(authenticationEntryPoint()).and()
 
 		.formLogin().loginPage("/login").failureUrl("/login?error").and()
 
@@ -234,5 +264,11 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 	public MolgenisPermissionService molgenisPermissionService()
 	{
 		return new MolgenisPermissionServiceImpl();
+	}
+
+	@Bean
+	public LoginUrlAuthenticationEntryPoint authenticationEntryPoint()
+	{
+		return new AjaxAwareLoginUrlAuthenticationEntryPoint("/login");
 	}
 }

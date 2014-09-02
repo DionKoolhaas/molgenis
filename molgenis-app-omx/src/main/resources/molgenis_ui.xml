@@ -35,16 +35,16 @@
         		<plugin id="form.MolgenisGroup" name="MolgenisGroup" url="form.MolgenisGroup"/>
         		<plugin id="form.EntityClass" name="EntityClass" url="form.EntityClass?subForms=AttributeClass.entityClass"/>
         		<plugin id="form.MolgenisToken" name="Tokens" url="form.MolgenisToken"/>
+        		<plugin id="form.Script" name="Script" url="form.Script"/>
+        		<plugin id="form.ScriptParameter" name="ScriptParameter" url="form.ScriptParameter"/>
 	        </menu>
 	    <menu label="BiobankConnect" name="biobankconnect">    
 		   	<plugin id="biobankconnect" name="BiobankConnect Wizard" url="biobankconnect"/>
 	        <plugin id="mappingmanager" name="Curate mappings" url="mappingmanager"/>
-		   	<plugin id="algorithmeditor" name="Algorithm Editor" url="algorithm"/>
 	        <plugin id="ontologyindexer" name="Add Ontologies" url="ontologyindexer"/>
 	        <plugin id="ontologyservice" name="Ontology Service" url="ontologyservice"/>
 	        <plugin id="ontologytree" name="Ontology Tree" url="ontologytree"/>
         </menu>
-        <plugin id="workflowdataentry" name="Workflow Editor" url="workflowdataentry"/>
         <menu label="About" name="background">    
 	        <plugin id="news" name="News" url="news"/>
 	        <plugin id="background" name="Background" url="background"/>
@@ -67,6 +67,7 @@
 	        <plugin id="col7a1-mutations" name="COL7A1-Mutations" url="col7a1_mutations"/>
 		</menu>
 		<plugin id="useraccount" name="Account" url="useraccount"/>
+		<plugin id="scripts" name="Scripts" url="scripts" />
         <plugin id="feedback" name="Feedback" url="feedback"/>
 	</menu>
 </molgenis>

@@ -6,7 +6,7 @@
 	var successHandler;
 	
 	ns.quoteIsoDateT = function() {
-		$('.date input').each(function() {
+		$('.datetime input').each(function() {
 			var d = $(this).val();
 			$(this).val(d.replace(/T/,"'T'"));//Put quotes around T
 		});
@@ -15,7 +15,7 @@
 	ns.onFormSubmit = function() {
 		ns.hideAlerts();
 		
-		$('.date input').each(function() {
+		$('.datetime input').each(function() {
 			var d = $(this).val();
 			$(this).val(d.replace(/'/g,''));//Remove quotes from isodateformat
 		});
@@ -64,11 +64,9 @@
 	
 	$(function() {
 		//Enable datepickers
-		$('.date').datetimepicker({
-			format: "yyyy-MM-dd'T'hh:mm:ss" + getCurrentTimezoneOffset(),
-			language: 'en',
-		    pickTime: true
-		});
+		$('.datetime').datetimepicker({useSeconds : true});
+		
+		$('.date').datetimepicker({pickTime: false});
 		
 		//If validation succeeds call onFormSubmit
 		$.validator.setDefaults({

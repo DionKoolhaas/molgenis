@@ -6,13 +6,6 @@
 	var self = molgenis.dataexplorer.filter.wizard = molgenis.dataexplorer.filter.wizard || {};
 
 	var restApi = new molgenis.RestClient();
-	var wizardTitle = "";
-
-    self.setWizardTitle = function setWizardTitle(title) {
-        if(title !== undefined) {
-            wizardTitle = title;
-        }
-    };
 
 	self.openFilterWizardModal = function(entityMetaData, attributeFilters) {
 		var modal = createFilterWizardModal();
@@ -24,32 +17,9 @@
 		var modal = $('#filter-wizard-modal');
 
 		if(modal.length === 0){
-			var items = [];
-			items.push('<div class="modal large hide" id="filter-wizard-modal" tabindex="-1">');
-			items.push('<div class="modal-header">');
-			items.push('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>');
-	        items.push('<h3>');
-	        items.push(wizardTitle);
-	        items.push('</h3>');
-			items.push('</div>');
-			items.push('<div class="modal-body">');
-			items.push('<div class="filter-wizard">');
-			items.push('<form class="form-horizontal">');
-			items.push('<ul class="wizard-steps"></ul>');
-			items.push('<div class="tab-content wizard-page "></div>');
-			items.push('<ul class="pager wizard">');
-			items.push('<li class="previous"><a href="#">Previous</a></li><li class="next"><a href="#">Next</a></li>');
-			items.push('</ul>');
-			items.push('</form>');
-			items.push('</div>');
-			items.push('</div>');
-			items.push('<div class="modal-footer">');
-			items.push('<a href="#" class="btn" data-dismiss="modal">Cancel</a>');
-			items.push('<a href="#" class="btn btn-primary filter-wizard-apply-btn" data-dismiss="modal">Apply</a>');
-			items.push('</div>');
-			items.push('</div>');
-	
-			modal = $(items.join(''));
+            var wizardTemplate = Handlebars.compile($("#filter-wizard-modal-template").html());
+
+            modal = $(wizardTemplate({}));
 			createFilterModalControls(modal);
 		}
 		
@@ -67,7 +37,7 @@
 			}
 		});
 		
-		modal.on('shown', function () {
+		modal.on('shown.bs.modal', function () {
 			$('form input:visible:first', modal).focus();
 		});
 		

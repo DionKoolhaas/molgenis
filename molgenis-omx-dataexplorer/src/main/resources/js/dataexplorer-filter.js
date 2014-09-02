@@ -30,6 +30,7 @@
 			case 'ENUM':
 			case 'INT':
 			case 'TEXT':
+			case 'SCRIPT':
 				return self.createComplexFilter(attribute, filter, wizard, 'OR');
 				break;
 			case 'MREF':
@@ -86,7 +87,7 @@
 			items.push('<p><a class="feature-filter-edit" data-href="' + attributeUri + '" href="#">'
 					+ attributeLabel + ': ' + self.createFilterQueyUserReadable(filter)
 					+ '</a><a class="feature-filter-remove" data-href="' + attributeUri + '" href="#" title="Remove '
-					+ attributeLabel + ' filter" ><i class="icon-remove"></i></a></p>');
+					+ attributeLabel + ' filter" ><span class="glyphicon glyphicon-remove"></span></a></p>');
 		});
 		items.push('</div>');
 		$('#feature-filters').html(items.join(''));
@@ -167,6 +168,7 @@
 			case 'TEXT':
 			case 'BOOL':
 			case 'ENUM':
+			case 'SCRIPT':
 				return htmlEscape(values[0] ? values[0] : '');
 			case 'CATEGORICAL':
 			case 'MREF':
@@ -191,7 +193,7 @@
 	 */
 	self.createComplexFilter = function(attribute, filter, wizard, fixedOperator) 
 	{		
-		var $container = $('<div class="complex-filter-container"></div>').data('attribute', attribute);
+		var $container = $('<div class="complex-filter-container form-group"></div>').data('attribute', attribute);
 		var useFixedOperator = (fixedOperator !== undefined && fixedOperator !== null ? true : false);
 		var filterElementOperator = null;
 		var $addButton = null;
@@ -236,7 +238,7 @@
 	self.addComplexFilterElementToContainer = function($container, attribute, complexFilterOperator, simpleFilter, wizard, isFirstElement, totalNumberElements, useFixedOperator) 
 	{
 		// The complex filter element container
-		var $complexElementContainer = $('<div class="control-group complex-element-container" data-filter="complex-element-container"></div>');
+		var $complexElementContainer = $('<div class="form-group complex-element-container" data-filter="complex-element-container"></div>');
 		
 		// Complex element containing the simple filter and the operator
 		var $complexElement = $('<div class="controls complex-element" data-filter="complex-element"></div>');
@@ -297,7 +299,7 @@
 	 * Options: OR, AND
 	 */
 	self.createComplexFilterSelectOperator = function (complexOperator, useFixedOperator){
-		var $controlGroup = $('<div class="controls">');
+		var $controlGroup = $('<div class="col-md-9">');
 		var operator = (complexOperator === 'AND' ? 'AND' : 'OR');
 		var orLabel= 'OR&nbsp;&nbsp;';
 		var andLabel = 'AND';
@@ -307,7 +309,7 @@
 		var $dropdown;
 		if(useFixedOperator === false){
 			$dropdown = $('<div class="btn-group" data-filter="complex-operator-container" style="margin-left: 154px"><div>');
-			$dropdown.append($('<a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">' + operatorLabel + ' <b class="caret"></a>'));
+			$dropdown.append($('<a class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" href="#">' + operatorLabel + ' <b class="caret"></a>'));
 			$dropdown.append($('<ul class="dropdown-menu"><li><a data-value="OR">' + orLabel + '</a></li><li><a data-value="AND">' + andLabel + '</a></li></ul>'));
 			$.each($dropdown.find('.dropdown-menu li a'), function(index, element){
 				$(element).click(function(){
@@ -323,7 +325,7 @@
 			$dropdown = $('<div data-filter="complex-operator-container" style="margin-left: 160px">' + operator + '<div>');
 		}
 
-		return $('<div class="control-group">').append($controlGroup.append($dropdown));
+		return $('<div class="form-group">').append($controlGroup.append($dropdown));
 	}
 	
 	/**
@@ -334,11 +336,11 @@
 		var label = attribute.label || attribute.name;
 		if(isFirstElement && wizard) 
 		{
-			return $('<label class="control-label" data-placement="right" data-title="' + attribute.description + '">' + label + '</label>').tooltip();
+			return $('<label class="col-md-3 control-label" data-placement="right" data-title="' + attribute.description + '">' + label + '</label>').tooltip();
 		}
 		else if (!isFirstElement && wizard) 
 		{
-			return $('<label class="control-label"></label>');
+			return $('<label class="col-md-3 control-label"></label>');
 		} 
 		else
 		{
@@ -358,7 +360,7 @@
 	 */
 	self.createComplexFilterAddButton = function($container, attribute, complexFilterOperator, wizard, useFixedOperator)
 	{
-		return ($('<button class="btn btn-mini" type="button" data-filter=complex-addbutton><i class="icon-plus"></i></button>').click(function(){
+		return ($('<button class="btn btn-default btn-xs" type="button" data-filter=complex-addbutton><span class="glyphicon glyphicon-plus"></span></button>').click(function(){
 					if($('[data-filter=complex-removebutton]', $container).length === 0)
 					{
 						$('[data-filter=complex-removebutton-container]', $container).append(self.createRemoveButtonFirstComplexElement($container));
@@ -372,7 +374,7 @@
 	 * Create remove button to remove complex elements that are not the first
 	 */
 	self.createRemoveButtonComplexElementFilter = function($complexElementContainer){
-		return $('<button class="btn btn-mini" type="button" data-filter=complex-removebutton><i class="icon-minus"></i></button>').click(function(){
+		return $('<button class="btn btn-default btn-xs" type="button" data-filter=complex-removebutton><i class="icon-minus"></i></button>').click(function(){
 					var $container = $complexElementContainer.parent();
 					var $addButton = $('[data-filter=complex-addbutton]', $container);
 					
@@ -394,7 +396,7 @@
 	 * Create remove button to remove the first element in a complex filter
 	 */
 	self.createRemoveButtonFirstComplexElement = function($container){
-		return $('<button class="btn btn-mini" type="button" data-filter=complex-removebutton><i class="icon-minus"></i></button>').click(function(){
+		return $('<button class="btn btn-default btn-xs" type="button" data-filter=complex-removebutton><i class="icon-minus"></i></button>').click(function(){
 					var $firstElement = $('[data-filter=complex-element]', $container)[0];
 					var $secondElement = $('[data-filter=complex-element]', $container)[1];
 					var $simpleFilterFirstElement = $('[data-filter=complex-simplefilter]', $firstElement);
@@ -417,7 +419,7 @@
 	 * Create simple filter
 	 */
 	self.createSimpleFilter = function(attribute, filter, wizard) {
-		var $container = $('<div class="simple-filter-container"></div>');
+		var $container = $('<div class="simple-filter-container form-group"></div>');
 		var $label = self.createFilterLabel(attribute, true, wizard);
 		$container.append($label);
 		$container.append(self.createSimpleFilterControls(attribute, filter));
@@ -429,7 +431,7 @@
 	 * Create simple filter controls
 	 */
 	self.createSimpleFilterControls = function(attribute, simpleFilter) {
-		var $controls = $('<div class="controls">').width('384px');
+		var $controls = $('<div class="col-md-9">').width('384px');
 		var name = 'input-' + attribute.name + '-' + new Date().getTime();
 		var values = simpleFilter ? simpleFilter.getValues() : null;
 		var fromValue = simpleFilter ? simpleFilter.fromValue : null;
@@ -452,7 +454,7 @@
 						sort : {
 							orders : [ {
 								direction : 'ASC',
-								property : 'id'
+								property : entityMeta.labelAttribute
 							} ]
 						}
 					}
@@ -471,13 +473,13 @@
 				var valTo = toValue ? toValue : undefined;
 				var inputFrom = createInput(attribute, {'name': nameFrom, 'placeholder': 'Start date', 'style' : 'width: 315px'}, valFrom);
 				var inputTo = createInput(attribute, {'name': nameTo, 'placeholder': 'End date', 'style' : 'width: 315px'}, valTo);
-				$controls.append($('<div class="control-group">').append(inputFrom)).append($('<div class="control-group">').append(inputTo));
+				$controls.append($('<div class="form-group">').append(inputFrom)).append($('<div class="form-group">').append(inputTo));
 				break;
 			case 'DECIMAL':
 			case 'INT':
 			case 'LONG':
 				if (attribute.range) {
-					var slider = $('<div id="slider" class="control-group"></div>').width('334px');
+					var slider = $('<div id="slider" class="form-group"></div>').width('334px');
 					var min = fromValue ? fromValue : attribute.range.min;
 					var max = toValue ? toValue : attribute.range.max;
 					slider.editRangeSlider({
@@ -502,6 +504,7 @@
 			case 'STRING':
 			case 'TEXT':
 			case 'ENUM':
+			case 'SCRIPT':
 				$controls.append(createInput(attribute, {'name': name, 'id': name, 'style' : 'width: 370px'}, values ? values[0] : undefined));
 				break;
 			case 'XREF':

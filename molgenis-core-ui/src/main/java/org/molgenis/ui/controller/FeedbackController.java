@@ -13,6 +13,9 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.molgenis.framework.server.MolgenisSettings;
 import org.molgenis.framework.ui.MolgenisPluginController;
 import org.molgenis.omx.auth.MolgenisUser;
+import org.molgenis.security.captcha.CaptchaException;
+import org.molgenis.security.captcha.CaptchaRequest;
+import org.molgenis.security.captcha.CaptchaService;
 import org.molgenis.security.core.utils.SecurityUtils;
 import org.molgenis.security.user.MolgenisUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +26,13 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
- * Controller that handles feedback page requests.
- * The user can fill in this feedback form to send a mail to the app's administrators.
+ * Controller that handles feedback page requests. The user can fill in this feedback form to send a mail to the app's
+ * administrators.
  */
 @Controller
 @RequestMapping(FeedbackController.URI)
@@ -36,6 +40,9 @@ public class FeedbackController extends AbstractStaticContentController
 {
 	public static final String ID = "feedback";
 	public static final String URI = MolgenisPluginController.PLUGIN_URI_PREFIX + ID;
+	private static final String MESSAGING_EXCEPTION_MESSAGE = "Unfortunately, we were unable to create an email message for the feedback you specified.";
+	private static final String MAIL_AUTHENTICATION_EXCEPTION_MESSAGE = "Unfortunately, we were unable to send the mail containing your feedback.<br/>Please contact the administrator.";
+	private static final String MAIL_SEND_EXCEPTION_MESSAGE = MAIL_AUTHENTICATION_EXCEPTION_MESSAGE;
 	private static final Logger LOGGER = Logger.getLogger(MolgenisPluginController.class);
 
 	@Autowired
@@ -43,6 +50,9 @@ public class FeedbackController extends AbstractStaticContentController
 
 	@Autowired
 	private MolgenisSettings molgenisSettings;
+	
+	@Autowired
+	private CaptchaService captchaService;
 
 	@Autowired
 	private JavaMailSender mailSender;
@@ -71,10 +81,16 @@ public class FeedbackController extends AbstractStaticContentController
 
 	/**
 	 * Handles feedback form submission.
+	 * @throws CaptchaException if no valid captcha is supplied
 	 */
 	@RequestMapping(method = RequestMethod.POST)
-	public String submitFeedback(@Valid FeedbackForm form)
+	public String submitFeedback(@Valid FeedbackForm form, @Valid @ModelAttribute CaptchaRequest captchaRequest) throws CaptchaException
 	{
+		if(!captchaService.validateCaptcha(captchaRequest.getCaptcha()))
+		{
+			form.setErrorMessage("Invalid captcha.");
+			return "view-feedback";
+		}
 		try
 		{
 			LOGGER.info("Sending feedback:" + form);
@@ -85,17 +101,17 @@ public class FeedbackController extends AbstractStaticContentController
 		catch (MessagingException e)
 		{
 			LOGGER.warn("Unable to create mime message for feedback form.", e);
-			form.setErrorMessage("Unfortunately, we were unable to create an email message for the feedback you specified.");
+			form.setErrorMessage(MESSAGING_EXCEPTION_MESSAGE);
 		}
 		catch (MailAuthenticationException e)
 		{
 			LOGGER.error("Error authenticating with email server.", e);
-			form.setErrorMessage("Unfortunately, we were unable to send the mail containing your feedback.<br/>Please contact the administrator.");
+			form.setErrorMessage(MAIL_AUTHENTICATION_EXCEPTION_MESSAGE);
 		}
 		catch (MailSendException e)
 		{
 			LOGGER.error("Error sending mail", e);
-			form.setErrorMessage("Unfortunately, we were unable to send the mail containing your feedback.<br/>Please contact the administrator.");
+			form.setErrorMessage(MAIL_SEND_EXCEPTION_MESSAGE);
 		}
 		return "view-feedback";
 	}

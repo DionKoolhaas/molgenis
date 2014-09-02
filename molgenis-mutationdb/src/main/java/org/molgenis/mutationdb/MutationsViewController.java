@@ -4,6 +4,7 @@ import static org.molgenis.mutationdb.MutationsViewController.URI;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -16,7 +17,7 @@ import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.framework.ui.MolgenisPluginController;
-import org.molgenis.util.MySqlFileUtil;
+import org.molgenis.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping(URI)
 public class MutationsViewController extends MolgenisPluginController
 {
-	public static final String ID = "col7a1_mutations";
+	public static final String ID = "col7a1-mutations";
 	public static final String URI = MolgenisPluginController.PLUGIN_URI_PREFIX + ID;
 	public static final String ENTITYNAME_MUTATIONSVIEW = "import_mutationsview";
 	public static final String ENTITYNAME_MUTATIONS = "import_mutations";
@@ -84,10 +85,15 @@ public class MutationsViewController extends MolgenisPluginController
 		{
 			Repository mutationsViewRepo = dataService.getRepositoryByEntityName(ENTITYNAME_MUTATIONSVIEW);
 			this.mysqlViewService.truncate(mutationsViewRepo.getEntityMetaData().getName());
-			this.mysqlViewService.populateWithQuery(MySqlFileUtil.getMySqlQueryFromFile(MutationsViewController.class,
-					PATH_TO_INSERT_QUERY));
-			this.mysqlViewService.populateWithQuery(MySqlFileUtil.getMySqlQueryFromFile(MutationsViewController.class,
-					PATH_TO_NA_QUERY));
+			try
+			{
+				this.mysqlViewService.populateWithQuery(ResourceUtils.getString(getClass(), PATH_TO_INSERT_QUERY));
+				this.mysqlViewService.populateWithQuery(ResourceUtils.getString(getClass(), PATH_TO_NA_QUERY));
+			}
+			catch (IOException e)
+			{
+				throw new RuntimeException(e);
+			}
 			return true;
 		}
 		else

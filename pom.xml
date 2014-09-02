@@ -54,8 +54,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.version>4.0.2.RELEASE</spring.version>
-        <spring.security.version>3.2.1.RELEASE</spring.security.version>
+        <spring.version>4.0.6.RELEASE</spring.version>
+        <spring.security.version>3.2.5.RELEASE</spring.security.version>
         <mysql.connector.java.version>5.1.28</mysql.connector.java.version>
 
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
@@ -101,6 +101,7 @@
                     <version>2.4</version>
                     <configuration>
                         <failOnMissingWebXml>false</failOnMissingWebXml>
+                        <warSourceDirectory>${basedir}/src/main/resources</warSourceDirectory>
                     </configuration>
                 </plugin>
                 <!-- specify plugin version -->
@@ -289,7 +290,7 @@
                             <contextPath>/</contextPath>
                             <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
                                 <resourcesAsCSV>
-                                    ${basedir}/src/main/webapp,${basedir}/target/generated-sources/molgenis/doc
+                                    ${basedir}/src/main/resources,${basedir}/target/generated-sources/molgenis/doc
                                 </resourcesAsCSV>
                             </baseResource>
                             <webInfIncludeJarPattern>.*/molgenis-[^/]*\.jar$|.*spring-[^/]*\.jar$
@@ -579,10 +580,8 @@
         <module>molgenis-omx-core</module>
         <module>molgenis-omx-das</module>
         <module>molgenis-omx-dataexplorer</module>
-        <module>molgenis-omx-protocolmanager</module>
         <module>molgenis-omx-importer</module>
         <module>molgenis-omx-protocolviewer</module>
-        <module>molgenis-omx-mobile</module>
         <module>molgenis-app-omx</module>
         <module>molgenis-search</module>
         <module>molgenis-search-elasticsearch</module>
@@ -606,5 +605,6 @@
         <module>molgenis-disease-matcher</module>
         <module>molgenis-data-examples</module>
         <module>molgenis-mutationdb</module>
+        <module>molgenis-scripts</module>
     </modules>
 </project>

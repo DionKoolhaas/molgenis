@@ -43,6 +43,7 @@ import org.molgenis.messageconverter.CsvHttpMessageConverter;
 import org.molgenis.security.core.MolgenisPermissionService;
 import org.molgenis.security.token.TokenService;
 import org.molgenis.util.GsonHttpMessageConverter;
+import org.molgenis.util.ResourceFingerprintRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -153,7 +154,7 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 	}
 
 	@Test
-	public void getEntityMetaData() throws Exception
+	public void retrieveEntityMeta() throws Exception
 	{
 		mockMvc.perform(get(HREF_ENTITY_META))
 				.andExpect(status().isOk())
@@ -161,11 +162,22 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 				.andExpect(
 						content().string(
 								"{\"href\":\"" + HREF_ENTITY_META + "\",\"name\":\"" + ENTITY_NAME
-										+ "\",\"attributes\":{\"name\":{\"href\":\"" + HREF_ENTITY_META + "/name\"}}}"));
+										+ "\",\"attributes\":{\"name\":{\"href\":\"" + HREF_ENTITY_META
+										+ "/name\"}},\"idAttribute\":\"id\"}"));
 	}
 
 	@Test
-	public void getEntityMetaDataSelectAttributes() throws Exception
+	public void retrieveEntityMetaPost() throws Exception
+	{
+		String json = "{\"attributes\":[\"name\"]}";
+		mockMvc.perform(post(HREF_ENTITY_META).param("_method", "GET").content(json).contentType(APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(APPLICATION_JSON))
+				.andExpect(content().string("{\"href\":\"" + HREF_ENTITY_META + "\",\"name\":\"" + ENTITY_NAME + "\"}"));
+	}
+
+	@Test
+	public void retrieveEntityMetaSelectAttributes() throws Exception
 	{
 		mockMvc.perform(get(HREF_ENTITY_META).param("attributes", "name"))
 				.andExpect(status().isOk())
@@ -174,7 +186,7 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 	}
 
 	@Test
-	public void getEntityMetaDataExpandAttributes() throws Exception
+	public void retrieveEntityMetaExpandAttributes() throws Exception
 	{
 		mockMvc.perform(get(HREF_ENTITY_META).param("expand", "attributes"))
 				.andExpect(status().isOk())
@@ -187,7 +199,7 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 										+ ENTITY_NAME
 										+ "\",\"attributes\":{\"name\":{\"href\":\""
 										+ HREF_ENTITY_META
-										+ "/name\",\"fieldType\":\"STRING\",\"name\":\"name\",\"label\":\"name\",\"nillable\":true,\"readOnly\":false,\"labelAttribute\":false,\"unique\":false,\"lookupAttribute\":true,\"aggregateable\":false}}}"));
+										+ "/name\",\"fieldType\":\"STRING\",\"name\":\"name\",\"label\":\"name\",\"nillable\":true,\"readOnly\":false,\"labelAttribute\":false,\"unique\":false,\"lookupAttribute\":true,\"aggregateable\":false}},\"idAttribute\":\"id\"}"));
 
 	}
 
@@ -250,6 +262,16 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 	{
 		mockMvc.perform(get(HREF_ENTITY_ID + "/name")).andExpect(status().isOk())
 				.andExpect(content().contentType(APPLICATION_JSON))
+				.andExpect(content().string("{\"href\":\"" + HREF_ENTITY_ID + "/name\",\"name\":\"Piet\"}"));
+	}
+
+	@Test
+	public void retrieveEntityAttributePost() throws Exception
+	{
+		String json = "{\"attributes\":[\"name\"]}";
+		mockMvc.perform(
+				post(HREF_ENTITY_ID + "/name").param("_method", "GET").content(json).contentType(APPLICATION_JSON))
+				.andExpect(status().isOk()).andExpect(content().contentType(APPLICATION_JSON))
 				.andExpect(content().string("{\"href\":\"" + HREF_ENTITY_ID + "/name\",\"name\":\"Piet\"}"));
 	}
 
@@ -472,7 +494,7 @@ public class RestControllerTest extends AbstractTestNGSpringContextTests
 		public RestController restController()
 		{
 			return new RestController(dataService(), tokenService(), authenticationManager(),
-					molgenisPermissionService(), new MolgenisRSQL());
+					molgenisPermissionService(), new MolgenisRSQL(), new ResourceFingerprintRegistry());
 		}
 	}
 

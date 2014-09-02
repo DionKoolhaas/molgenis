@@ -2,16 +2,14 @@ $.when( $,
 		window.top.molgenis = window.top.molgenis || {}, 
 		$.get('dataexplorer/settings') 
 ).then(
-function($, molgenis, settings) {	
+function($, molgenis, settingsXhr) {	
 	"use strict";
 	var self = molgenis.dataexplorer = molgenis.dataexplorer || {};
 	
 	// module api
 	self.getSelectedEntityMeta = getSelectedEntityMeta;
-	self.getSelectedAttributes = getSelectedAttributes;
-	self.setShowWizardOnInit = setShowWizardOnInit; 
+	self.getSelectedAttributes = getSelectedAttributes; 
 	self.getEntityQuery = getEntityQuery;
-    self.setNoResultMessage = setNoResultMessage;
     self.getNoResultMessage = getNoResultMessage;
     self.createHeader = createHeader;
 	
@@ -20,22 +18,18 @@ function($, molgenis, settings) {
 	var attributeFilters = {};
 	var selectedAttributes = [];
 	var searchQuery = null;
-	var showWizardOnInit = false;
 	var modules = [];
-    var noResultMessage = '';
-    
-    /**
-     * @memberOf molgenis.dataexplorer
-     */
-    function setNoResultMessage(message) {
-        noResultMessage = message;
-    }
 
+	if(settingsXhr[1] !== 'success') {
+		molgenis.createAlert([{message: 'An error occurred initializing the data explorer.'}], 'error');
+	}
+	var settings = settingsXhr[0];
+	
     /**
      * @memberOf molgenis.dataexplorer
      */
     function getNoResultMessage() {
-        return noResultMessage;
+        return settings['mod.aggregates.noresults'];
     }
 
 	/**
@@ -55,13 +49,6 @@ function($, molgenis, settings) {
 	/**
 	 * @memberOf molgenis.dataexplorer
 	 */
-	function setShowWizardOnInit(show) {
-		showWizardOnInit = show;
-	}
-	
-	/**
-	 * @memberOf molgenis.dataexplorer
-	 */
 	function getEntityQuery() {
 		return createEntityQuery();
 	}
@@ -71,13 +58,13 @@ function($, molgenis, settings) {
 	 */
 	function createModuleNav(modules, container) {
 		var items = [];
-		items.push('<ul class="nav nav-tabs pull-left">');
+		items.push('<ul class="nav nav-tabs pull-left" role="tablist">');
 		$.each(modules, function() {
 			var href = molgenis.getContextUrl() + '/module/' + this.id;
-			items.push('<li data-id="' + this.id + '"><a href="' + href + '" data-target="#tab-' + this.id + '" data-toggle="tab"><img src="/img/' + this.icon + '"> ' + this.label + '</a></li>');
+			items.push('<li data-id="' + this.id + '"><a href="' + href + '" data-target="#tab-' + this.id + '" role="tab" data-toggle="tab"><img src="/img/' + this.icon + '"> ' + this.label + '</a></li>');
 		});
 		items.push('</ul>');
-		items.push('<div class="tab-content span9">');
+		items.push('<div class="tab-content">');
 		$.each(modules, function() {
 			items.push('<div class="tab-pane" id="tab-' + this.id + '">Loading...</div>');
 		});
@@ -243,7 +230,7 @@ function($, molgenis, settings) {
 		var searchTerm = $("#observationset-search").val();
 		
 		// lazy load tab contents
-		$(document).on('show', 'a[data-toggle="tab"]', function(e) {
+		$(document).on('show.bs.tab', 'a[data-toggle="tab"]', function(e) {
 			var target = $($(e.target).attr('data-target'));
 			if(target.data('status') !== 'loaded') {
 				target.load($(e.target).attr('href'), function() {
@@ -286,9 +273,8 @@ function($, molgenis, settings) {
 					$('a[data-toggle="tab"]', $('#module-nav')).first().click();
 					
 					//Show wizard on show of dataexplorer if url param 'wizard=true' is added
-					if (showWizardOnInit) {
+					if (settings['wizard.oninit'] && settings['wizard.oninit'] === 'true') {
 						self.filter.wizard.openFilterWizardModal(selectedEntityMetaData, attributeFilters);
-						showWizardOnInit = false;
 					}
 					
 				});
@@ -331,7 +317,17 @@ function($, molgenis, settings) {
 			searchQuery = $(this).val().trim();
 			$(document).trigger('changeQuery', createEntityQuery());
 		});
-	
+		
+		$("#observationset-search").change(function(e) {
+			searchQuery = $(this).val().trim();
+			$(document).trigger('changeQuery', createEntityQuery());
+		});
+		
+		$('#search-clear-button').click(function(){
+			$("#observationset-search").val('');
+			$("#observationset-search").change();
+		});
+		
 		$('#filter-wizard-btn').click(function() {
 			self.filter.wizard.openFilterWizardModal(selectedEntityMetaData, attributeFilters);
 		});

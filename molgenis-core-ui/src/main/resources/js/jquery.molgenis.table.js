@@ -9,20 +9,22 @@
 	function createTable(settings) {
 		// create elements
 		var items = [];
-		items.push('<div class="row-fluid molgenis-table-container">');
+		items.push('<div class="row molgenis-table-container">');
+		items.push('<div class="col-md-12">');
 		if(settings.rowClickable){
 			items.push('<table class="table-striped table-condensed molgenis-table table-hover"><thead></thead><tbody></tbody></table>');
 		}else{
 			items.push('<table class="table-striped table-condensed molgenis-table"><thead></thead><tbody></tbody></table>');
 		}
 		items.push('</div>');
-		items.push('<div class="row-fluid">');
-		items.push('<div class="span3"><div class="molgenis-table-controls pull-left">');
+		items.push('</div>');
+		items.push('<div class="row">');
+		items.push('<div class="col-md-3"><div class="molgenis-table-controls pull-left">');
 		if(settings.editable)
-			items.push('<a class="btn edit-table-btn" href="#" data-toggle="button"><i class="icon-edit"></i></a>');
+			items.push('<a class="btn btn-default edit-table-btn" href="#" data-toggle="button"><span class="glyphicon glyphicon-edit"></span></a>');
 		items.push('</div></div>');
-		items.push('<div class="span6"><div class="molgenis-table-pager"></div></div>');
-		items.push('<div class="span3"><div class="molgenis-table-info pull-right"></div></div>');
+		items.push('<div class="col-md-6"><div class="molgenis-table-pager"></div></div>');
+		items.push('<div class="col-md-3"><div class="molgenis-table-info pull-right"></div></div>');
 		items.push('</div>');
 		settings.container.html(items.join(''));
 		
@@ -66,6 +68,12 @@
 	
 			// build table after all meta data for referenced entities was loaded
 			$.when.apply($, dfds).done(function() {
+				// inject referenced entities meta data in attributes
+				$.each(colAttributes, function(i, attribute) {
+					if(attribute.fieldType === 'XREF' || attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL') {
+						attribute.refEntity = refEntitiesMeta[attribute.refEntity.href];
+					}
+				});
 				callback(colAttributes, refEntitiesMeta);
 			});
 		} else callback([], {});
@@ -139,23 +147,10 @@
 		var tabindex = 1;
 		for ( var i = 0; i < data.items.length; ++i) {
 			var entity = data.items[i];
-			var row = $('<tr>').data('entity', entity).data('id', entity.href); // FIXME remove id
+			var row = $('<tr>').data('entity', entity).data('id', entity.href);
 			if (settings.editenabled) {
 				var cell = $('<td class="trash" tabindex="' + tabindex++ + '">');
-				var href = entity.href;
-				$('<i class="icon-trash delete-row-btn"></i>').click(function(e) {
-					if(confirm('Are you sure you want to delete this row?')) {
-						restApi.remove(href, {
-							success: function() {
-								getTableData(settings, function(data) {
-									createTableBody(data, settings);
-									createTablePager(data, settings);
-									createTableFooter(data, settings);
-								});
-							}
-						});
-					}
-				}).appendTo(cell);
+				$('<span class="glyphicon glyphicon-trash delete-row-btn"></span>').appendTo(cell);
 				row.append(cell);
 			}
 
@@ -195,15 +190,15 @@
 		switch(attribute.fieldType) {
 			case 'BOOL':
 				var items = [];
-				items.push('<div class="bool-btn-group">');
-				items.push('<button type="button" class="btn btn-mini');
+				items.push('<div class="bool-btn-group btn-group-xs">');
+				items.push('<button type="button" class="btn btn-default');
 				if(value === true) items.push(' active');
 				items.push('" data-state="true">Yes</button>');
-				items.push('<button type="button" class="btn btn-mini');
+				items.push('<button type="button" class="btn btn-default');
 				if(value === false) items.push(' active');
 				items.push('" data-state="false">No</button>');
 				if(attribute.nillable) {
-					items.push('<button type="button" class="btn btn-mini');
+					items.push('<button type="button" class="btn btn-default');
 					if(value === undefined) items.push(' active');
 					items.push('" data-state="undefined">N/A</button>');
 				}
@@ -215,45 +210,47 @@
 				// TODO do not construct uri from other uri
 				var refEntityCollectionUri = attribute.refEntity.href.replace("/meta", "");
 				
+				var format = function(item) {
+					if (item)
+						return item[refEntityMeta.labelAttribute];
+				};
+				
 				var opts = {
-					// lazy load drop-down content 
+					id: 'href',
+					allowClear : attribute.nillable ? true : false,
+					placeholder : ' ', // cannot be an empty string
+					initSelection: function(element, callback) {
+						callback(value);
+					},
 				    query: function (query) {
-				    	restApi.getAsync(refEntityCollectionUri, null, function(data) {
-				    		var results = [];
-				    		$.each(data.items, function(i, item) {
-				    			results.push({id: item.href, text: item[refEntityMeta.labelAttribute]});
-				    		});
-				    		query.callback({results : results});
+				    	var num = 25;
+					    var q = {
+							q : {
+								start : (query.page - 1) * num, 
+								num : num
+							}
+						};
+				    	
+				    	restApi.getAsync(refEntityCollectionUri, q, function(data) {
+				    		query.callback({results: data.items, more: data.nextHref ? true : false});
 				    	});
 				    },
-				    // disable search box
-				    minimumResultsForSearch: -1,
+				    formatResult: format,
+				    formatSelection: format,
+				    minimumResultsForSearch: -1, // permanently hide the search field
 				    width: '100%'
 				};
-				if(value) {
-					opts.initSelection = function(element, callback) {
-						callback({id: value.href, text: value[refEntityMeta.labelAttribute]});
-					};
-				}
-				if(attribute.nillable) {
-					opts.allowClear = true,
-					opts.placeholder = ' '; // cannot be an empty string
-				}
 				
-				var container = $('<input type="hidden" class="categorical-select">');
-				// first append container, then create select2
-				cell.html(container);
-				container.select2(opts);
-				
-				if(value && attribute.nillable) {
-					// initSelection not called in case of placeholder: https://github.com/ivaynberg/select2/issues/2086
-					// workaround:
-					container.select2('val', []);
-				}
+				var container = $('<input type="hidden" class="ref-select">');
+				cell.html(container); // first append container, then create select2
+				container.select2(opts).select2('val', []); // create select2 and trigger initSelection
 				break;
 			case 'DATE':
+				var datepicker = createInput(attribute, {'style': 'min-width: 100px'}, entity[attribute.name]);
+				cell.html(datepicker);
+				break;
 			case 'DATE_TIME':
-				var datepicker = createInput(attribute, null, entity[attribute.name]);
+				var datepicker = createInput(attribute, {'style': 'min-width: 210px'}, entity[attribute.name]);
 				cell.html(datepicker);
 				break;
 			case 'DECIMAL':
@@ -265,19 +262,90 @@
 				break;
 			case 'MREF':
 				var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
-				var lblValue = entity[attribute.name] ? $.map(entity[attribute.name].items, function(val) {return val[refEntityMeta.labelAttribute];}) : undefined; 
-				var container = $('<div class="xrefmrefsearch">');
-				container.xrefmrefsearch({attribute: attribute, values: lblValue});
-				container.addClass('ref-select');
-				cell.html(container);
+				// TODO do not construct uri from other uri
+				var refEntityCollectionUri = attribute.refEntity.href.replace("/meta", "");
+				
+				var format = function(item) {
+					return item[refEntityMeta.labelAttribute];
+				};
+				
+				// note: allowClear not possible in combination with multiple select
+				var opts = {
+					id: 'href', 
+					multiple: true,
+					initSelection: function(element, callback) {
+						callback(value.items);
+					},
+				    query: function (query) {
+				    	var num = 100;
+					    var q = {
+							q : {
+								start : (query.page - 1) * num, 
+								num : num,
+								q : [ {
+									field : refEntityMeta.labelAttribute,
+									operator : 'SEARCH',
+									value : query.term
+								} ]
+							}
+						};
+				    	
+				    	restApi.getAsync(refEntityCollectionUri, q, function(data) {
+				    		query.callback({results: data.items, more: data.nextHref ? true : false});
+				    	});
+				    },
+				    formatResult: format,
+				    formatSelection: format,
+				    width: '400px' // preserve row height changes by limiting y overflow
+				};
+				
+				var container = $('<input type="hidden" class="ref-select">');
+				cell.html(container); // first append container, then create select2
+				container.select2(opts).select2('val', []); // create select2 and trigger initSelection
 				break;
 			case 'XREF':
 				var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
-				var lblValue = entity[attribute.name] ? entity[attribute.name][refEntityMeta.labelAttribute] : undefined;
-				var container = $('<div class="xrefmrefsearch">');
-				container.xrefmrefsearch({attribute: attribute, values: lblValue});
-				container.addClass('ref-select');
-				cell.html(container);
+				// TODO do not construct uri from other uri
+				var refEntityCollectionUri = attribute.refEntity.href.replace("/meta", "");
+				
+				var format = function(item) {
+					if(item)
+						return item[refEntityMeta.labelAttribute];
+				};
+				
+				var opts = {
+					id: 'href',
+					allowClear : attribute.nillable ? true : false,
+					placeholder : ' ', // cannot be an empty string
+					initSelection: function(element, callback) {
+						callback(value);
+					},
+				    query: function (query) {
+				    	var num = 100;
+					    var q = {
+							q : {
+								start : (query.page - 1) * num, 
+								num : num,
+								q : [ {
+									field : refEntityMeta.labelAttribute,
+									operator : 'SEARCH',
+									value : query.term
+								} ]
+							}
+						};
+				    	
+				    	restApi.getAsync(refEntityCollectionUri, q, function(data) {
+				    		query.callback({results: data.items, more: data.nextHref ? true : false});
+				    	});
+				    },
+				    formatResult: format,
+				    formatSelection: format,
+				    width: '100%'
+				};
+				
+				var container = $('<input type="hidden" class="ref-select">');
+				cell.html(container); // first append container, then create select2
+				container.select2(opts).select2('val', []); // create select2 and trigger initSelection
 				break;
 			default:
 				var value = entity[attribute.name];
@@ -359,10 +427,12 @@
 		var modal = $('#table-ref-modal');
 		if(!modal.length) {
 			var items = [];
-			items.push('<div class="modal hide medium" id="table-ref-modal" tabindex="-1">');
+			items.push('<div class="modal" id="table-ref-modal" tabindex="-1" aria-labelledby="table-ref-modal-label" aria-hidden="true">');
+			items.push('<div class="modal-dialog">');
+			items.push('<div class="modal-content">');
 			items.push('<div class="modal-header">');
-			items.push('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>');
-			items.push('<h3 class="ref-title"></h3>');
+			items.push('<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>');
+			items.push('<h4 class="modal-title ref-title" id="table-ref-modal-label">Sign up</h4>');
 			items.push('</div>');
 			items.push('<div class="modal-body">');
 			items.push('<legend class="ref-description-header"></legend>');
@@ -433,32 +503,6 @@
 					});
 				}
 				break;
-			case 'CATEGORICAL':
-				var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
-
-				var data = cell.find('.categorical-select').select2('data');
-				var editValue = data ? data.id : '';
-            	var entity = settings.data.items[row];
-				value = entity[attribute.name] ? entity[attribute.name].href : '';
-            	
-            	if(value !== editValue) {
-            		editValue = editValue !== '' ? restApi.getPrimaryKeyFromHref(editValue) : ''; 
-					restApi.update(cell.data('id'), editValue, {
-						success: function() {
-							if (editValue === '')
-								delete entity[attribute.name];
-							else {
-								if(!entity[attribute.name])
-									entity[attribute.name] = {};
-								entity[attribute.name].href = editValue;
-								entity[attribute.name][refEntityMeta.labelAttribute] = data.text;	
-							}
-							
-							cell.addClass('edited');
-						}
-					});
-				}
-				break;
 			case 'DATE':
 			case 'DATE_TIME':
 				var editValue = cell.find('input').val();
@@ -487,10 +531,12 @@
 						restApi.update(cell.data('id'), editValue, {
 							success: function() {
 								settings.data.items[row][attribute.name] = editValue;
-								cell.addClass('edited');
+								cell.removeClass('invalid-input').addClass('edited');
 							}
 						});
 					}
+				} else {
+					cell.removeClass('edited').addClass('invalid-input');
 				}
 				break;
 			case 'MREF':
@@ -511,31 +557,35 @@
 					}
 				}
 				break;
+			case 'CATEGORICAL' :
 			case 'XREF':
 				var select = cell.find('input[type=hidden]');
 				var data = select.select2('data');
-				var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
-            	var entity = settings.data.items[row];
-				value = entity[attribute.name] ? entity[attribute.name].href : '';
-				var editValue = data.href;
-				var editLabel = data[refEntityMeta.labelAttribute];
-				
-            	if(value !== editValue) {
-            		editValue = editValue !== '' ? restApi.getPrimaryKeyFromHref(editValue) : ''; 
-					restApi.update(cell.data('id'), editValue, {
-						success: function() {
-							if (editValue === '')
-								delete entity[attribute.name];
-							else {
-								if(!entity[attribute.name])
-									entity[attribute.name] = {};
-								entity[attribute.name].href = editValue;
-								entity[attribute.name][refEntityMeta.labelAttribute] = editLabel;	
+				if(attribute.nillable || data) {
+	            	var entity = settings.data.items[row];
+					var value = entity[attribute.name] ? entity[attribute.name].href : '';
+					var editValue = data ? data.href : '';
+					
+	            	if(value !== editValue) {
+	            		var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
+	            		var editLabel = data ? data[refEntityMeta.labelAttribute] : '';
+	            		
+	            		editValue = editValue !== '' ? restApi.getPrimaryKeyFromHref(editValue) : ''; 
+						restApi.update(cell.data('id'), editValue, {
+							success: function() {
+								if (editValue === '')
+									delete entity[attribute.name];
+								else {
+									if(!entity[attribute.name])
+										entity[attribute.name] = {};
+									entity[attribute.name].href = editValue;
+									entity[attribute.name][refEntityMeta.labelAttribute] = editLabel;	
+								}
+								
+								cell.addClass('edited');
 							}
-							
-							cell.addClass('edited');
-						}
-					});
+						});
+					}
 				}
 				break;
 			default:
@@ -692,6 +742,25 @@
 			}
 		});
 		
+		// toggle edit table mode
+		$(container).on('click', '.delete-row-btn', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			
+			if(confirm('Are you sure you want to delete this row?')) {
+				var href = $(this).closest('tr').data('id');
+				restApi.remove(href, {
+					success: function() {
+						getTableData(settings, function(data) {
+							createTableBody(data, settings);
+							createTablePager(data, settings);
+							createTableFooter(data, settings);
+						});
+					}
+				});
+			}
+		});
+		
 		// update values on losing focus on cell
 		$(container).on('keydown', '.molgenis-table tbody.editable td', function(e) {
 			var cell = $(this);
@@ -750,7 +819,7 @@
 		});
 
 		// DATE, DATE_TIME
-		$(container).on('changeDate', function(e) {
+		$(container).on('dp.change', function(e) {
 			var cell = $(e.target).closest('td');
 			persistCell(cell, settings);
 		});

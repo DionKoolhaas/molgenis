@@ -22,6 +22,7 @@ import org.molgenis.security.MolgenisSecurityWebAppDatabasePopulatorService;
 import org.molgenis.security.core.utils.SecurityUtils;
 import org.molgenis.security.runas.RunAsSystem;
 import org.molgenis.studymanager.StudyManagerController;
+import org.molgenis.ui.MolgenisInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,7 +85,10 @@ public class WebAppDatabasePopulatorServiceImpl implements WebAppDatabasePopulat
 
 		// DataExplorer rows clickable yes / no
 		runtimePropertyMap.put(DataExplorerController.KEY_DATAEXPLORER_ROW_CLICKABLE, String.valueOf(false));
-		
+
+		// DataExplorer hide select if dataset selected through url
+		runtimePropertyMap.put(DataExplorerController.KEY_HIDE_SELECT, String.valueOf(true));
+
 		// Annotators include files/tools
 		String molgenisHomeDir = System.getProperty("molgenis.home");
 
@@ -107,12 +111,19 @@ public class WebAppDatabasePopulatorServiceImpl implements WebAppDatabasePopulat
 		runtimePropertyMap.put(ClinVarServiceAnnotator.CLINVAR_FILE_LOCATION_PROPERTY,
 				molgenisHomeDirAnnotationResources + "/Clinvar/variant_summary.txt");
 
-		runtimePropertyMap.put(DataExplorerController.WIZARD_TITLE, "Filter Wizard");
-		runtimePropertyMap.put(DataExplorerController.WIZARD_BUTTON_TITLE, "Wizard");
-		runtimePropertyMap.put(DataExplorerController.AGGREGATES_NORESULTS_MESSAGE, "No results found");
+		runtimePropertyMap.put(DataExplorerController.KEY_HIDE_SEARCH_BOX, String.valueOf(false));
+		runtimePropertyMap.put(DataExplorerController.KEY_HIDE_ITEM_SELECTION, String.valueOf(false));
+		runtimePropertyMap.put(DataExplorerController.KEY_HEADER_ABBREVIATE,
+				DataExplorerController.DEFAULT_VAL_HEADER_ABBREVIATE);
+		runtimePropertyMap.put(DataExplorerController.KEY_SHOW_WIZARD_ONINIT,
+				String.valueOf(DataExplorerController.DEFAULT_VAL_SHOW_WIZARD_ONINIT));
+		runtimePropertyMap.put(DataExplorerController.AGGREGATES_NORESULTS_MESSAGE,
+				DataExplorerController.DEFAULT_AGGREGATES_NORESULTS_MESSAGE);
 
 		runtimePropertyMap.put(StudyManagerController.EXPORT_BTN_TITLE, "Export");
 		runtimePropertyMap.put(StudyManagerController.EXPORT_ENABLED, String.valueOf(false));
+
+		runtimePropertyMap.put(MolgenisInterceptor.I18N_LOCALE, "en");
 
 		runtimePropertyMap.put(GenomeConfig.GENOMEBROWSER_START, "POS,start_nucleotide");
 		runtimePropertyMap.put(GenomeConfig.GENOMEBROWSER_STOP, "stop_pos,stop_nucleotide,end_nucleotide");
