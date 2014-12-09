@@ -7,13 +7,13 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.molgenis.auth.MolgenisGroup;
+import org.molgenis.auth.MolgenisGroupMember;
+import org.molgenis.auth.MolgenisUser;
 import org.molgenis.data.DataService;
 import org.molgenis.data.MolgenisDataException;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.framework.server.MolgenisSettings;
-import org.molgenis.omx.auth.MolgenisGroup;
-import org.molgenis.omx.auth.MolgenisGroupMember;
-import org.molgenis.omx.auth.MolgenisUser;
 import org.molgenis.security.runas.RunAsSystem;
 import org.molgenis.security.user.MolgenisUserException;
 import org.molgenis.security.user.MolgenisUserService;
@@ -28,6 +28,7 @@ public class AccountService
 	private static final Logger logger = Logger.getLogger(AccountService.class);
 
 	public static final String KEY_PLUGIN_AUTH_ACTIVATIONMODE = "plugin.auth.activation_mode";
+	public static final String KEY_PLUGIN_AUTH_ENABLE_SELFREGISTRATION = "plugin.auth.enable_self_registration";
 	public static final String ALL_USER_GROUP = "All Users";
 	private static final String KEY_APP_NAME = "app.name";
 	private static final ActivationMode DEFAULT_ACTIVATION_MODE = ActivationMode.ADMIN;
@@ -223,5 +224,10 @@ public class AccountService
 				if (str.equalsIgnoreCase(activationMode.toString())) return activationMode;
 			return defaultActivationMode;
 		}
+	}
+
+	public boolean isSelfRegistrationEnabled()
+	{
+		return molgenisSettings.getBooleanProperty(KEY_PLUGIN_AUTH_ENABLE_SELFREGISTRATION, true);
 	}
 }

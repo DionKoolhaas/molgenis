@@ -15,7 +15,6 @@
 	};
 
 	molgenis.createAlert = function(alerts, type, container) {
-		console.log(alerts, type, container);
 		if (type !== 'error' && type !== 'warning' && type !== 'success')
 			type = 'error';
 		if (container === undefined) {
@@ -64,29 +63,6 @@
 		else
 			i18nObj = JSON.parse(str ? str : '{}');
 		return i18nObj;
-	};
-
-	/*
-	 * Create a datasets indexer alert when indexer is running.
-	 */
-	molgenis.createDatasetsindexerAlert = function() {
-		$.get("/dataindexerstatus", function(response) {
-			if (response && response.isRunning === true) {
-				showDatasetsindexerStatusMessage();
-			}
-		});
-
-		function showDatasetsindexerStatusMessage() {
-			$.get("/dataindexerstatus", function(response) {
-				$('.datasetsindexerAlerts').empty();
-				if (response.isRunning === true) {
-					setTimeout(showDatasetsindexerStatusMessage, 3000);
-				}
-				molgenis.createAlert([ {
-					'message' : response.message
-				} ], response.type, $('.datasetsindexerAlerts'));
-			});
-		}
 	};
 
 	/**
@@ -348,9 +324,9 @@ function createInput(attr, attrs, val, lbl) {
 		var $input = createBasicInput('radio', attrs, val);
 		return label.append($input).append(val ? 'True' : 'False');
 	case 'CATEGORICAL':
-		var label = $('<label class="checkbox">');
+		var label = $('<label>');
 		var $input = createBasicInput('checkbox', attrs, val);
-		return label.append($input).append(lbl);
+		return $('<div class="checkbox">').append(label.append($input).append(lbl));
 	case 'DATE':
 	case 'DATE_TIME':
 		var $div = $('<div>').addClass('group-append date input-group');
@@ -540,7 +516,7 @@ function createInput(attr, attrs, val, lbl) {
 			data : JSON.stringify(entity),
 			async : false,
 			success : callback && callback.success ? callback.success : function() {},
-			error : callback && callback.error ? callback.error : function() {},
+			error : callback && callback.error ? callback.error : function() {}
 		});
 	};
 
@@ -609,6 +585,7 @@ function createInput(attr, attrs, val, lbl) {
 
 function showSpinner(callback) {
 	var spinner = $('#spinner');
+	
 	if (spinner.length === 0) {
 		// do not add fade effect on modal: http://stackoverflow.com/a/22101894
 		var items = [];
@@ -623,10 +600,14 @@ function showSpinner(callback) {
 		$('body').append(items.join(''));
 		spinner = $('#spinner');
 		spinner.data('count', 0);
+		spinner.modal({
+			backdrop: 'static',
+			show: false
+		});
 	}
-
+	
 	if (callback) {
-		spinner.on('shown.bs.modal', function() {
+		spinner.on('shown.bs.modal', function(e) {
 			callback();
 		});
 	}
@@ -654,6 +635,54 @@ function hideSpinner() {
 			$('#spinner').data('count', count - 1);
 		}
 	}
+}
+
+/**
+ * Helper block function container
+ */
+function handleBarHelperBlocks(Handlebars) {
+	Handlebars.registerHelper('equal', function(lvalue, rvalue, options) {
+	    if (arguments.length < 3)
+	        throw new Error("Handlebars Helper equal needs 2 parameters");
+	    if (lvalue != rvalue) {
+	        return options.inverse(this);
+	    } else {
+	        return options.fn(this);
+	    }
+	});
+	
+	Handlebars.registerHelper('notequal', function(lvalue, rvalue, options) {
+	    if (arguments.length < 3)
+	        throw new Error("Handlebars Helper equal needs 2 parameters");
+	    if (lvalue != rvalue) {
+	    	 return options.fn(this);
+	    } else {
+	    	 return options.inverse(this);
+	    }
+	});
+	
+	Handlebars.registerHelper('ifCond', function (v1, operator, v2, options) {
+	    switch (operator) {
+	        case '==':
+	            return (v1 == v2) ? options.fn(this) : options.inverse(this);
+	        case '===':
+	            return (v1 === v2) ? options.fn(this) : options.inverse(this);
+	        case '<':
+	            return (v1 < v2) ? options.fn(this) : options.inverse(this);
+	        case '<=':
+	            return (v1 <= v2) ? options.fn(this) : options.inverse(this);
+	        case '>':
+	            return (v1 > v2) ? options.fn(this) : options.inverse(this);
+	        case '>=':
+	            return (v1 >= v2) ? options.fn(this) : options.inverse(this);
+	        case '&&':
+	            return (v1 && v2) ? options.fn(this) : options.inverse(this);
+	        case '||':
+	            return (v1 || v2) ? options.fn(this) : options.inverse(this);
+	        default:
+	            return options.inverse(this);
+	    }
+	});
 }
 
 $(function() {
@@ -721,6 +750,13 @@ $(function() {
 	    }, 0);
 	});
 	
+	// if modal closes, check if other modal remains open, if so, reapply the modal-open class to the body 
+	$(document).on('hidden.bs.modal', '.modal', function (event) {
+		if( $('.modal:visible').length ) {
+			$('body').addClass('modal-open');
+		}
+	});
+	
 	// focus first input on modal display
 	$(document).on('shown.bs.modal', '.modal', function() {
 		$(this).find('input:visible:first').focus();
@@ -774,6 +810,9 @@ $(function() {
 		});
 		return o;
 	};
+	
+	// Call handleBarHelperBlock function to set helper blocks for entire application
+	handleBarHelperBlocks(Handlebars);
 	
 	// clear datetimepicker on pressing cancel button
 	$(document).on('click', '.clear-date-time-btn', function(e) {

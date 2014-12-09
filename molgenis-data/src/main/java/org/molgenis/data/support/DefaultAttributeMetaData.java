@@ -1,5 +1,7 @@
 package org.molgenis.data.support;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.molgenis.MolgenisFieldTypes;
@@ -22,7 +24,7 @@ import com.google.common.collect.Lists;
  */
 public class DefaultAttributeMetaData implements AttributeMetaData
 {
-	private final String name;
+	private String name;
 	private FieldType fieldType = MolgenisFieldTypes.STRING;
 	private String description;
 	private boolean nillable = true;
@@ -36,7 +38,7 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 	private boolean visible = true; // remove?
 	private boolean unique = false;
 	private boolean auto = false;
-	private Iterable<AttributeMetaData> attributesMetaData;
+	private List<AttributeMetaData> attributesMetaData;
 	private boolean aggregateable = false;
 	private Range range;
 
@@ -53,6 +55,50 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 		if (name == null) throw new IllegalArgumentException("Name cannot be null");
 		this.name = name;
 		this.fieldType = MolgenisFieldTypes.STRING;
+	}
+	
+	public DefaultAttributeMetaData(String newName, AttributeMetaData attributeMetaData)
+	{
+		this(attributeMetaData);
+		this.name = newName;
+	}
+
+	/**
+	 * Copy constructor
+	 * 
+	 * @param attributeMetaData
+	 */
+	public DefaultAttributeMetaData(AttributeMetaData attributeMetaData)
+	{
+		this.name = attributeMetaData.getName();
+		this.fieldType = attributeMetaData.getDataType();
+		this.description = attributeMetaData.getDescription();
+		this.nillable = attributeMetaData.isNillable();
+		this.readOnly = attributeMetaData.isReadonly();
+		this.defaultValue = attributeMetaData.getDefaultValue();
+		this.idAttribute = attributeMetaData.isIdAtrribute();
+		this.labelAttribute = attributeMetaData.isLabelAttribute();
+		this.lookupAttribute = attributeMetaData.isLookupAttribute();
+		EntityMetaData refEntity = attributeMetaData.getRefEntity();
+		this.refEntity = refEntity != null ? new DefaultEntityMetaData(refEntity) : null; // deep copy
+		this.label = attributeMetaData.getLabel();
+		this.visible = attributeMetaData.isVisible();
+		this.unique = attributeMetaData.isUnique();
+		this.auto = attributeMetaData.isAuto();
+		this.aggregateable = attributeMetaData.isAggregateable();
+		this.range = attributeMetaData.getRange();
+
+		// deep copy
+		Iterable<AttributeMetaData> attributeParts = attributeMetaData.getAttributeParts();
+		if (attributeParts != null)
+		{
+			List<AttributeMetaData> attributesMetaData = new ArrayList<AttributeMetaData>();
+			for (AttributeMetaData attributePart : attributeParts)
+			{
+				attributesMetaData.add(new DefaultAttributeMetaData(attributePart));
+			}
+			this.attributesMetaData = attributesMetaData;
+		}
 	}
 
 	@Override
@@ -99,6 +145,11 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 	@Override
 	public boolean isReadonly()
 	{
+		if (idAttribute)
+		{
+			readOnly = true;
+		}
+
 		return readOnly;
 	}
 
@@ -167,16 +218,21 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 	@Override
 	public Iterable<AttributeMetaData> getAttributeParts()
 	{
-		if (this.attributesMetaData == null && this.getRefEntity() != null)
-		{
-			return this.refEntity.getAttributes();
-		}
-		return attributesMetaData;
+		return this.attributesMetaData != null ? this.attributesMetaData : Collections.<AttributeMetaData> emptyList();
 	}
 
-	public void setAttributesMetaData(Iterable<AttributeMetaData> attributesMetaData)
+	public void addAttributePart(AttributeMetaData attributePart)
 	{
-		this.attributesMetaData = attributesMetaData;
+		if (this.attributesMetaData == null)
+		{
+			this.attributesMetaData = new ArrayList<AttributeMetaData>();
+		}
+		this.attributesMetaData.add(attributePart);
+	}
+
+	public void setAttributesMetaData(Iterable<AttributeMetaData> attributeParts)
+	{
+		this.attributesMetaData = Lists.newArrayList(attributeParts);
 	}
 
 	@Override
@@ -206,6 +262,11 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 	@Override
 	public boolean isUnique()
 	{
+		if (idAttribute)
+		{
+			unique = true;
+		}
+
 		return unique;
 	}
 
@@ -256,9 +317,10 @@ public class DefaultAttributeMetaData implements AttributeMetaData
 		return this.aggregateable;
 	}
 
-	public void setAggregateable(boolean aggregateable)
+	public DefaultAttributeMetaData setAggregateable(boolean aggregateable)
 	{
 		this.aggregateable = aggregateable;
+		return this;
 	}
 
 	@Override

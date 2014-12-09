@@ -21,9 +21,9 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMessage.RecipientType;
 
+import org.molgenis.auth.MolgenisUser;
 import org.molgenis.framework.server.MolgenisSettings;
 import org.molgenis.framework.ui.MolgenisPluginRegistry;
-import org.molgenis.omx.auth.MolgenisUser;
 import org.molgenis.security.captcha.CaptchaException;
 import org.molgenis.security.captcha.CaptchaService;
 import org.molgenis.security.user.MolgenisUserService;
@@ -85,7 +85,8 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 		authentication = new TestingAuthenticationToken("userName", null);
 		authentication.setAuthenticated(true);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
-		when(captchaService.validateCaptcha("validCaptcha")).thenReturn(true);
+		reset(captchaService);
+		when(captchaService.consumeCaptcha("validCaptcha")).thenReturn(true);
 	}
 
 	@Test
@@ -156,6 +157,7 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 		verify(message, times(1)).setSubject("[feedback-app123] Feedback form");
 		verify(message, times(1)).setText("Feedback from First Last (user@domain.com):\n\n" + "Feedback.\nLine two.");
 		verify(javaMailSender, times(1)).send(message);
+		verify(captchaService, times(1)).consumeCaptcha("validCaptcha");
 	}
 
 	@Test
@@ -174,6 +176,7 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 				.andExpect(status().isOk()).andExpect(view().name("view-feedback"))
 				.andExpect(model().attribute("feedbackForm", hasProperty("submitted", equalTo(true))));
 		verify(message, times(1)).setSubject("[feedback-molgenis] Feedback form");
+		verify(captchaService, times(1)).consumeCaptcha("validCaptcha");
 	}
 
 	@Test
@@ -192,6 +195,7 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 				.andExpect(view().name("view-feedback"))
 				.andExpect(model().attribute("feedbackForm", hasProperty("submitted", equalTo(true))));
 		verify(message, times(1)).setSubject("[feedback-molgenis] <no subject>");
+		verify(captchaService, times(1)).consumeCaptcha("validCaptcha");
 	}
 
 	@Test
@@ -201,6 +205,7 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 				MockMvcRequestBuilders.post(FeedbackController.URI).param("name", "First Last")
 						.param("subject", "Feedback form").param("email", "user@domain.com").param("feedback", "")
 						.param("captcha", "validCaptcha")).andExpect(status().is4xxClientError());
+		verify(captchaService, times(0)).consumeCaptcha("validCaptcha");
 	}
 
 	@Test
@@ -225,12 +230,14 @@ public class FeedbackControllerTest extends AbstractTestNGSpringContextTests
 								"feedbackForm",
 								hasProperty("errorMessage",
 										equalTo("Unfortunately, we were unable to send the mail containing "
-												+ "your feedback.<br/>Please contact the administrator."))));
+												+ "your feedback. Please contact the administrator."))));
+		verify(captchaService, times(1)).consumeCaptcha("validCaptcha");
 	}
 
 	@Test
 	public void submitInvalidCaptcha() throws Exception
 	{
+		when(captchaService.consumeCaptcha("validCaptcha")).thenReturn(false);
 		mockMvcFeedback
 				.perform(
 						MockMvcRequestBuilders.post(FeedbackController.URI).param("name", "First Last")
