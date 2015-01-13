@@ -27,7 +27,8 @@
 	"bootstrap-switch.min.js",
 	"jquery.molgenis.xrefmrefsearch.js",
 	"dataexplorer.js",
-	"jquery.molgenis.table.js"]>
+	"jquery.molgenis.table.js",
+	"bootbox.min.js"]>
 
 <@header css js/>
 <div class="row">
@@ -39,18 +40,25 @@
                     <span id="entity-class-description"></span>
                 </div>
                 <div class="col-md-3">
-                    <div id="dataset-select-container" class="pull-right" <#if hideDatasetSelect??>style="display:none"</#if>>
+                    <div id="dataset-select-container" class="pull-right">
                         <select class="form-control" id="dataset-select" data-placeholder="Choose an Entity">
                                 <option value=""></option><#-- Required for placeholder to work with select2 -->
                         <#if entitiesMeta?has_content>
                             <#list entitiesMeta.iterator() as entityMeta>
-                                <option value="/api/v1/${entityMeta.name?html}"<#if selectedEntityName?? && (entityMeta.name == selectedEntityName)> selected</#if>><#if entityMeta.label?has_content>${entityMeta.label?html}<#else>${entityMeta.name?html}</#if></option>
+                                <option value="${entityMeta.name?html}"<#if selectedEntityName?? && (entityMeta.name == selectedEntityName)> selected</#if>><#if entityMeta.label?has_content>${entityMeta.label?html}<#else>${entityMeta.name?html}</#if></option>
                             </#list>
                         </#if>
                         </select>
                     </div>
                 </div>
             </div>
+            <#if isAdmin?has_content && isAdmin>
+	            <div class="row">
+	            	<div class="col-md-1">
+	            		<a id="delete" class="btn btn-danger">delete</a>
+	            	</div>
+	            </div>
+            </#if>
         </div>
     </div>
 </div>
