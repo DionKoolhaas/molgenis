@@ -383,8 +383,6 @@ function createInput(attr, attrs, val, lbl) {
 	}
 }
 
-<<<<<<< HEAD
-=======
 // molgenis entity REST API client
 (function($, molgenis) {
 	"use strict";
@@ -394,32 +392,32 @@ function createInput(attr, attrs, val, lbl) {
 	};
 
 	molgenis.RestClient.prototype.get = function(resourceUri, options) {
-		return this._get(resourceUri, options);
+		return this._get(resourceUri, options, false);
 	};
 
-	molgenis.RestClient.prototype.getAsync = function(resourceUri, options,
-			callback) {
-		this._get(resourceUri, options, callback);
+	molgenis.RestClient.prototype.getAsync = function(resourceUri, options, callback) {
+		return this._get(resourceUri, options, true, callback);
 	};
 
-	molgenis.RestClient.prototype._get = function(resourceUri, options,
-			callback) {
+	molgenis.RestClient.prototype._get = function(resourceUri, options, async, callback) {
 		var resource = null;
-
-		var async = callback !== undefined;
 		
 		var config = {
 			'dataType' : 'json',
 			'cache' : true,
-			'async' : async,
-			'success' : function(data) {
-				if (async)
-					callback(data);
-				else
-					resource = data;
-			}
+			'async' : async
 		};
-
+		
+		if(callback) {
+			config['success'] = function(data) {
+				callback(data);
+			}
+		} else if(async === false) {
+			config['success'] = function(data) {
+				resource = data;
+			}
+		}
+		
 		// tunnel get requests with options through a post,
 		// because it might not fit in the URL
 		if(options) {
@@ -453,10 +451,12 @@ function createInput(attr, attrs, val, lbl) {
 			});
 		}
 
-		this._ajax(config);
+		var promise = this._ajax(config);
 
-		if (!async)
+		if (async === false)
 			return resource;
+		else
+			return promise;
 	};
 
 	molgenis.RestClient.prototype._ajax = function(config) {
@@ -468,7 +468,7 @@ function createInput(attr, attrs, val, lbl) {
 			});
 		}
 
-		$.ajax(config);
+		return $.ajax(config);
 	};
 
 	molgenis.RestClient.prototype._toApiUri = function(resourceUri, options) {
@@ -498,18 +498,18 @@ function createInput(attr, attrs, val, lbl) {
 	};
 
 	molgenis.RestClient.prototype.remove = function(href, callback) {
-		this._ajax({
+		return this._ajax({
 			type : 'POST',
 			url : href,
 			data : '_method=DELETE',
 			async : false,
-			success : callback.success,
-			error : callback.error
+			success : callback && callback.success ? callback.success : function() {},
+			error : callback && callback.error ? callback.error : function() {}
 		});
 	};
 
 	molgenis.RestClient.prototype.update = function(href, entity, callback) {
-		this._ajax({
+		return this._ajax({
 			type : 'POST',
 			url : href + '?_method=PUT',
 			contentType : 'application/json',
@@ -567,19 +567,6 @@ function createInput(attr, attrs, val, lbl) {
 			}
 		});
 	};
-<<<<<<< HEAD
-	
-}($, window.top.molgenis = window.top.molgenis || {}));
-
->>>>>>> 7965ec798df15ec7bf9075064f94aa7c039d9e8e
-// molgenis search API client
-(function($, molgenis) {
-	"use strict";
-
-	molgenis.SearchClient = function SearchClient() {
-	};
-=======
->>>>>>> 9791c99ad0ab349911fc1c74a4078956f27ecc58
 
 }($, window.top.molgenis = window.top.molgenis || {}));
 
@@ -933,13 +920,12 @@ $(function() {
 	};
 
 }(jQuery));
-// IE9 
-if(window.history === undefined) {
-	window.history = {
-		pushState : function(){},
-		replaceState : function(){}
-	}
-}
-if(window.onpopstate === undefined) {
+// IE9
+if(window.history === undefined)
+	window.history = {};
+if(window.history.pushState === undefined)
+	window.history.pushState = function(){};
+if(window.history.replaceState === undefined)
+	window.history.replaceState = function(){};
+if(window.onpopstate === undefined)
 	window.onpopstate = function(){}
-}
