@@ -3,9 +3,10 @@ package org.molgenis.data.vcf.importer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -22,6 +23,8 @@ import org.molgenis.data.elasticsearch.ElasticsearchRepositoryCollection;
 import org.molgenis.data.importer.EntitiesValidationReportImpl;
 import org.molgenis.data.importer.ImportService;
 import org.molgenis.data.support.DefaultEntityMetaData;
+import org.molgenis.data.support.GenericImporterExtensions;
+import org.molgenis.data.vcf.VcfRepository;
 import org.molgenis.framework.db.EntitiesValidationReport;
 import org.molgenis.framework.db.EntityImportReport;
 import org.molgenis.security.permission.PermissionSystemService;
@@ -37,7 +40,6 @@ import com.google.common.collect.Lists;
 public class VcfImporterService implements ImportService
 {
 	private static final Logger LOG = LoggerFactory.getLogger(VcfImporterService.class);
-	private static final List<String> SUPPORTED_FILE_EXTENSIONS = Arrays.asList("vcf", "vcf.gz");
 	private static final int BATCH_SIZE = 10000;
 	private static final String BACKEND = ElasticsearchRepositoryCollection.NAME;
 	private final FileRepositoryCollectionFactory fileRepositoryCollectionFactory;
@@ -96,7 +98,12 @@ public class VcfImporterService implements ImportService
 
 			throw new MolgenisDataException(e);
 		}
-
+		// Should not be necessary, bug in elasticsearch?
+		// "All shards failed" for big datasets if this flush is not here...
+		for (EntityMetaData entityMetaData : addedEntities)
+		{
+			dataService.getRepository(entityMetaData.getName()).flush();
+		}
 		return report;
 	}
 
@@ -123,11 +130,11 @@ public class VcfImporterService implements ImportService
 			report.getFieldsImportable().put(entityName, availableAttributeNames);
 
 			// Sample entity
-			AttributeMetaData sampleAttribute = emd.getAttribute("SAMPLES");
+			AttributeMetaData sampleAttribute = emd.getAttribute(VcfRepository.SAMPLES);
 			if (sampleAttribute != null)
 			{
-				boolean sampleEntityExists = dataService.hasRepository(entityName);
-				String sampleEntityName = sampleAttribute.getRefEntity().getName();
+                String sampleEntityName = sampleAttribute.getRefEntity().getName();
+                boolean sampleEntityExists = dataService.hasRepository(sampleEntityName);
 				report.getSheetsImportable().put(sampleEntityName, !sampleEntityExists);
 
 				List<String> availableSampleAttributeNames = Lists.newArrayList();
@@ -146,7 +153,7 @@ public class VcfImporterService implements ImportService
 	@Override
 	public boolean canImport(File file, RepositoryCollection source)
 	{
-		for (String extension : SUPPORTED_FILE_EXTENSIONS)
+		for (String extension : GenericImporterExtensions.getVCF())
 		{
 			if (file.getName().toLowerCase().endsWith(extension))
 			{
@@ -156,6 +163,7 @@ public class VcfImporterService implements ImportService
 
 		return false;
 	}
+
 
 	public void importVcf(File vcfFile) throws IOException
 	{
@@ -177,7 +185,7 @@ public class VcfImporterService implements ImportService
 		}
 	}
 
-	public EntityImportReport importVcf(Repository inRepository, List<EntityMetaData> addedEntities) throws IOException
+    private EntityImportReport importVcf(Repository inRepository, List<EntityMetaData> addedEntities) throws IOException
 	{
 		EntityImportReport report = new EntityImportReport();
 		Repository sampleRepository = null;
@@ -191,12 +199,14 @@ public class VcfImporterService implements ImportService
 		DefaultEntityMetaData entityMetaData = new DefaultEntityMetaData(inRepository.getEntityMetaData());
 		entityMetaData.setBackend(BACKEND);
 
-		AttributeMetaData sampleAttribute = entityMetaData.getAttribute("SAMPLES");
+		AttributeMetaData sampleAttribute = entityMetaData.getAttribute(VcfRepository.SAMPLES);
 		if (sampleAttribute != null)
 		{
 			DefaultEntityMetaData samplesEntityMetaData = new DefaultEntityMetaData(sampleAttribute.getRefEntity());
 			samplesEntityMetaData.setBackend(BACKEND);
 			sampleRepository = dataService.getMeta().addEntityMeta(samplesEntityMetaData);
+            permissionSystemService.giveUserEntityAndMenuPermissions(SecurityContextHolder.getContext(),
+                    Collections.singletonList(samplesEntityMetaData.getName()));
 			addedEntities.add(sampleAttribute.getRefEntity());
 		}
 
@@ -206,7 +216,10 @@ public class VcfImporterService implements ImportService
 		List<Entity> sampleEntities = new ArrayList<>();
 		try (Repository outRepository = dataService.getMeta().addEntityMeta(entityMetaData))
 		{
-			addedEntities.add(entityMetaData);
+            permissionSystemService.giveUserEntityAndMenuPermissions(SecurityContextHolder.getContext(),
+                    Collections.singletonList(entityMetaData.getName()));
+
+            addedEntities.add(entityMetaData);
 
 			if (sampleRepository != null)
 			{
@@ -215,7 +228,7 @@ public class VcfImporterService implements ImportService
 					Entity entity = inIterator.next();
 					vcfEntityCount++;
 
-					Iterable<Entity> samples = entity.getEntities("SAMPLES");
+					Iterable<Entity> samples = entity.getEntities(VcfRepository.SAMPLES);
 					if (samples != null)
 					{
 						Iterator<Entity> sampleIterator = samples.iterator();
@@ -277,4 +290,9 @@ public class VcfImporterService implements ImportService
 		return true;
 	}
 
+	@Override
+	public Set<String> getSupportedFileExtensions()
+	{
+		return GenericImporterExtensions.getVCF();
+	}
 }

@@ -48,10 +48,13 @@ public class InMemoryRepositoryCollection implements ManageableRepositoryCollect
 	@Override
 	public Repository addEntityMeta(EntityMetaData entityMetaData)
 	{
-		Repository repo = new InMemoryRepository(entityMetaData);
-		repos.put(entityMetaData.getName(), repo);
-
-		return repo;
+		String name = entityMetaData.getName();
+		if (!repos.containsKey(name))
+		{
+			Repository repo = new InMemoryRepository(entityMetaData);
+			repos.put(name, repo);
+		}
+		return repos.get(name);
 	}
 
 	@Override
@@ -82,5 +85,17 @@ public class InMemoryRepositoryCollection implements ManageableRepositoryCollect
 	public void addAttributeSync(String entityName, AttributeMetaData attribute)
 	{
 		throw new NotImplementedException("Not implemented yet");
+	}
+
+	@Override
+	public boolean hasRepository(String name)
+	{
+		if (null == name) return false;
+		Iterator<String> entityNames = getEntityNames().iterator();
+		while (entityNames.hasNext())
+		{
+			if (entityNames.next().equals(name)) return true;
+		}
+		return false;
 	}
 }

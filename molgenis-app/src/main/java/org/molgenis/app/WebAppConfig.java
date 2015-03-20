@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.apache.poi.ss.formula.eval.NotImplementedException;
 import org.molgenis.DatabaseConfig;
 import org.molgenis.data.DataService;
 import org.molgenis.data.EntityMetaData;
@@ -17,6 +18,7 @@ import org.molgenis.data.mysql.MysqlRepositoryCollection;
 import org.molgenis.data.support.DataServiceImpl;
 import org.molgenis.data.system.RepositoryTemplateLoader;
 import org.molgenis.dataexplorer.freemarker.DataExplorerHyperlinkDirective;
+import org.molgenis.migrate.MysqlMigrate;
 import org.molgenis.system.core.FreemarkerTemplateRepository;
 import org.molgenis.ui.MolgenisWebAppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,8 +77,16 @@ public class WebAppConfig extends MolgenisWebAppConfig
 				return new MysqlRepository(localDataService, dataSource, new AsyncJdbcTemplate(new JdbcTemplate(
 						dataSource)));
 			}
+
+			@Override
+			public boolean hasRepository(String name)
+			{
+				throw new NotImplementedException("Not implemented yet");
+			}
 		};
 		localDataService.getMeta().setDefaultBackend(backend);
+
+		new MysqlMigrate(new JdbcTemplate(dataSource), "MySQL").migrate(localDataService.getMeta());
 
 		for (EntityMetaData emd : localDataService.getMeta().getEntityMetaDatas())
 		{
