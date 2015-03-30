@@ -54,12 +54,12 @@
 	<#if molgenis_ui.hrefJs?has_content>
 		<script src="<@resource_href "/js/${molgenis_ui.hrefJs?html}"/>"></script>
 	</#if>
-	<#if app_tracking_code.piwik?has_content || app_tracking_code.googleAnalytics?has_content>
+	<#if app_tracking_code.footer?has_content || app_tracking_code.header?has_content>
 		<script src="<@resource_href "/js/jquery.cookie.js"/>"></script>
 		<script src="<@resource_href "/js/molgenis-head-cookies.js"/>"></script>
 	</#if>
-	<#if app_tracking_code.googleAnalytics?has_content>
-		<script id="app-tracking-code-googleAnalytics" type="text/javascript">${app_tracking_code.googleAnalytics?string}</script>
+	<#if app_tracking_code.header?has_content>
+		<script id="app-tracking-code-header" type="text/javascript">${app_tracking_code.header?string}</script>
 	</#if>
 	</head>
 	<body>
@@ -127,7 +127,7 @@
 		<div class="container-fluid">
 			<#-- Logo start -->
             <#list menu.items as item> 
-                <#if item.type != "MENU" && item.name == "Home"> 
+                <#if item.type != "MENU" && item.name == "Home" && app_home_logo?has_content>
 					<div class="navbar-header">
 						<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-molgenis-navbar">
 		                    <span class="sr-only">Toggle navigation</span>
@@ -152,7 +152,7 @@
 						
 						<#-- Single menu items -->
 						<#if item.type != "MENU">	
-							<#if item.name != "Home">
+							<#if item.name != "Home" || !app_home_logo?has_content>
 								<#if item.url == pluginid_with_query_string>
 									<li class="active">
 										<a href="#">${item.name?html}</a>

@@ -14,10 +14,10 @@ import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 
-import org.molgenis.data.AutoIdRepositoryDecorator;
+import org.molgenis.data.AutoValueRepositoryDecorator;
 import org.molgenis.data.DataService;
 import org.molgenis.data.IdGenerator;
-import org.molgenis.data.IndexedAutoIdRepositoryDecorator;
+import org.molgenis.data.IndexedAutoValueRepositoryDecorator;
 import org.molgenis.data.IndexedCrudRepositorySecurityDecorator;
 import org.molgenis.data.IndexedRepository;
 import org.molgenis.data.ManageableRepositoryCollection;
@@ -122,13 +122,13 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 		registry.addResourceHandler("/html/**").addResourceLocations("/html/", "classpath:/html/").setCachePeriod(3600);
 	}
 
-	@Value("${molgenis.build.profile}")
-	private String molgenisBuildProfile;
+	@Value("${environment:production}")
+	private String environment;
 
 	@Override
 	public void configureMessageConverters(List<HttpMessageConverter<?>> converters)
 	{
-		boolean prettyPrinting = molgenisBuildProfile != null && molgenisBuildProfile.equals("dev");
+		boolean prettyPrinting = environment != null && environment.equals("development");
 		converters.add(new GsonHttpMessageConverter(prettyPrinting));
 		converters.add(new BufferedImageHttpMessageConverter());
 		converters.add(new CsvHttpMessageConverter());
@@ -171,7 +171,7 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 	@Bean
 	public MolgenisInterceptor molgenisInterceptor()
 	{
-		return new MolgenisInterceptor(resourceFingerprintRegistry(), molgenisSettings);
+		return new MolgenisInterceptor(resourceFingerprintRegistry(), molgenisSettings, environment);
 	}
 
 	@Bean
@@ -374,6 +374,23 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 	}
 
 	@PostConstruct
+	public void validateMolgenisServerProperties()
+	{
+		// validate properties defined in molgenis-server.properties
+		String path = System.getProperty("molgenis.home") + File.separator + "molgenis-server.properties";
+		if (environment == null)
+		{
+			throw new RuntimeException("Missing required property 'environment' in " + path
+					+ ", allowed values are [development, production].");
+		}
+		else if (!environment.equals("development") && !environment.equals("production"))
+		{
+			throw new RuntimeException("Invalid value '" + environment + "' for property 'environment' in " + path
+					+ ", allowed values are [development, production].");
+		}
+	}
+
+	@PostConstruct
 	public void initRepositories()
 	{
 		if (!indexExists())
@@ -431,12 +448,12 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 				{
 					IndexedRepository indexedRepos = (IndexedRepository) repository;
 
-					return new IndexedCrudRepositorySecurityDecorator(new IndexedAutoIdRepositoryDecorator(
+					return new IndexedCrudRepositorySecurityDecorator(new IndexedAutoValueRepositoryDecorator(
 							new IndexedRepositoryValidationDecorator(dataService(), indexedRepos,
 									new EntityAttributesValidator()), molgenisIdGenerator()), molgenisSettings);
 				}
 
-				return new RepositorySecurityDecorator(new AutoIdRepositoryDecorator(new RepositoryValidationDecorator(
+				return new RepositorySecurityDecorator(new AutoValueRepositoryDecorator(new RepositoryValidationDecorator(
 						dataService(), repository, new EntityAttributesValidator()), molgenisIdGenerator()));
 			}
 		};
