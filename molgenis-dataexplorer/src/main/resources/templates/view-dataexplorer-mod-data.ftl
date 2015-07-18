@@ -27,7 +27,7 @@
     	<div class="col-md-12">
 			<div class="data-table-pager-container">
 				<div class="pull-right">
-					<a id="download-modal-button" class="btn btn-default" data-toggle="modal" data-target="#downloadModal">Download as CSV</a>
+					<a id="download-modal-button" class="btn btn-default" data-toggle="modal" data-target="#downloadModal">Download</a>
 				<#if galaxyEnabled?? && galaxyEnabled == true>
 					<a id="galaxy-export-modal-button" class="btn btn-default" data-toggle="modal" data-target="#galaxy-export-modal">Export to Galaxy</a>
 				</#if>
@@ -58,6 +58,30 @@
                     <div class="radio">
                         <label>
                             <input type="radio" name="colNames" value="ATTRIBUTE_NAMES">  Attribute Names
+                        </label>   
+                    </div>
+                    
+                    <span id="helpBlock" class="help-block">As entity values I want:</span>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="entityValues" value="ENTITY_LABELS" checked> Entity labels
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="entityValues" value="ENTITY_IDS"> Entity ids
+                        </label>   
+                    </div>
+                    
+                    <span id="helpBlock" class="help-block">As download type I want:</span>
+                    <div class="radio">
+	                    <label>
+	                        <input type="radio" name="downloadTypes" value="DOWNLOAD_TYPE_CSV" checked> CSV
+	                    </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="downloadTypes" value="DOWNLOAD_TYPE_XLSX">  XLSX
                         </label>   
                     </div>
 	      	    </form>
@@ -112,14 +136,9 @@
 </div>
 <script>
     molgenis.dataexplorer.setGenomeAttributes('${genomebrowser_start_list?js_string}', '${genomebrowser_chrom_list?js_string}', '${genomebrowser_id_list?js_string}', '${genomebrowser_patient_list?js_string}');
-    <#-- load css dependencies -->
-	if (!$('link[href="<@resource_href '/css/jquery.molgenis.table.css'/>"]').length)
-		$('head').append('<link rel="stylesheet" href="<@resource_href "/css/jquery.molgenis.table.css"/>" type="text/css" />');
 	<#-- load js dependencies -->
 	$.when(
-		$.ajax("<@resource_href "/js/jquery.bootstrap.pager.js"/>", {'cache': true}),
-		$.ajax("<@resource_href "/js/jquery.molgenis.table.js"/>", {'cache': true}),
-		$.ajax("<@resource_href "/js/dalliance-compiled.js"/>", {'cache': true}),
+		$.ajax("<@resource_href "/js/dalliance-compiled.min.js"/>", {'cache': true}),
 		$.ajax("<@resource_href "/js/dataexplorer-data.js"/>", {'cache': true}))
 		.done(function() {
     			molgenis.dataexplorer.data.setGenomeBrowserAttributes('${genomebrowser_start_list?js_string}', '${genomebrowser_chrom_list?js_string}', '${genomebrowser_id_list?js_string}', '${genomebrowser_patient_list?js_string}');
@@ -140,13 +159,7 @@
 		            $('#genomebrowser').css('display', 'none');
 		        }
 
-			<#-- create data table -->
-			var rowClickable = ${rowClickable?string('true', 'false')};
-			var tableEditable = ${tableEditable?string('true', 'false')};
-			if (tableEditable) {
-				tableEditable = molgenis.hasWritePermission(molgenis.dataexplorer.getSelectedEntityMeta().name);
-			}
-			molgenis.dataexplorer.data.createDataTable(tableEditable, rowClickable);
+			molgenis.dataexplorer.data.createDataTable();
 		})
 		.fail(function() {
 			molgenis.createAlert([{'message': 'An error occured. Please contact the administrator.'}], 'error');

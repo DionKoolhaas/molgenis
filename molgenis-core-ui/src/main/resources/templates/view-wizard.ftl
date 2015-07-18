@@ -38,13 +38,13 @@
 			</#list>
 				
 			<ul class="pager bwizard-buttons">
-				<li class="previous<#if !wizard.previousButton.enabled> disabled</#if>" role="button">
-					<a href="${context_url?html}${wizard.previousButton.targetUri?html}">&larr; ${wizard.previousButton.title?html}</a>
+				<li role="button" class="previous <#if !wizard.previousButton.enabled> disabled</#if>">
+					<a <#if wizard.previousButton.id?has_content>id="${wizard.previousButton.id?html}"</#if> href="${context_url?html}${wizard.previousButton.targetUri?html}">&larr; ${wizard.previousButton.title?html}</a>
 				</li>
 				<li class="next pull-right<#if !wizard.nextButton.enabled> disabled</#if>" role="button">
-					<a href="${context_url?html}${wizard.nextButton.targetUri?html}">${wizard.nextButton.title?html} &rarr;</a>
+					<a <#if wizard.nextButton.id?has_content>id="${wizard.nextButton.id?html}"</#if> href="${context_url?html}${wizard.nextButton.targetUri?html}">${wizard.nextButton.title?html} &rarr;</a>
 				</li>
-				<li role="button" class="cancel pull-right">
+				<li class="restart pull-right" role="button">
 					<a href="${context_url?html}/restart">Restart</a>
 				</li>
 			</ul>

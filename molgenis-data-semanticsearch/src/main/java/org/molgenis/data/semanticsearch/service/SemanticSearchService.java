@@ -2,34 +2,36 @@ package org.molgenis.data.semanticsearch.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 import org.molgenis.data.AttributeMetaData;
-import org.molgenis.data.semanticsearch.semantic.ItemizedSearchResult;
+import org.molgenis.data.EntityMetaData;
+import org.molgenis.data.semanticsearch.explain.bean.ExplainedQueryString;
+import org.molgenis.data.semanticsearch.semantic.Hit;
 import org.molgenis.ontology.core.model.OntologyTerm;
 
 public interface SemanticSearchService
 {
 	/**
-	 * Finds more attributes from all kinds of packages, that semantically resemble the attribute that is provided.
+	 * Find all relevant source attributes for the specified target attribute
 	 * 
-	 * @param p
-	 *            the Package that will be searched for attributes
+	 * @param source
+	 * @param target
 	 * @param attributeMetaData
-	 *            attribute that the results should resemble
-	 * @return AttributeMetaData of resembling attributes, sorted by relevance, not including @attributeMetaData
+	 * @return AttributeMetaData of resembling attributes, sorted by relevance
 	 */
-	Iterable<AttributeMetaData> findAttributes(org.molgenis.data.Package p, AttributeMetaData attributeMetaData);
+	Iterable<AttributeMetaData> findAttributes(org.molgenis.data.EntityMetaData source, EntityMetaData target,
+			AttributeMetaData attributeMetaData);
 
 	/**
-	 * Searches the packages and their entities and attributes, and tags thereon for a search term.
+	 * Find all relevant source attributes with an explanation
 	 * 
-	 * @param searchTerm
-	 *            the term to search for
-	 * @return {@link Iterable} of {@link ItemizedSearchResult}s containing {@link Package}s, sorted by descending
-	 *         relevance
+	 * @param source
+	 * @param target
+	 * @param attributeMetaData
+	 * @return AttributeMetaData of resembling attributes, sorted by relevance
 	 */
-	Iterable<ItemizedSearchResult<Package>> findPackages(String searchTerm);
+	Map<AttributeMetaData, Iterable<ExplainedQueryString>> explainAttributes(EntityMetaData source,
+			EntityMetaData target, AttributeMetaData attributeMetaData);
 
 	/**
 	 * Finds {@link OntologyTerm}s that can be used to tag an attribute.
@@ -38,9 +40,9 @@ public interface SemanticSearchService
 	 *            name of the entity
 	 * @param ontologies
 	 *            IDs of ontologies to take the {@link OntologyTerm}s from.
-	 * @return {@link Map} of {@link OntologyTerm} results
+	 * @return {@link Map} of {@link Hit}s for {@link OntologyTerm} results
 	 */
-	Map<AttributeMetaData, List<OntologyTerm>> findTags(String entity, List<String> ontologyIDs);
+	Map<AttributeMetaData, Hit<OntologyTerm>> findTags(String entity, List<String> ontologyIDs);
 
 	/**
 	 * Finds {@link OntologyTerm}s for an attribute.
@@ -49,8 +51,8 @@ public interface SemanticSearchService
 	 *            AttributeMetaData to tag
 	 * @param ontologyIds
 	 *            IDs of ontologies to take the {@link OntologyTerm}s from.
-	 * @return {@link Future} for the {@link List} of {@link OntologyTerm}s found
+	 * @return {@link List} of {@link Hit}s for {@link OntologyTerm}s found, most relevant first
 	 */
-	List<OntologyTerm> findTags(AttributeMetaData attribute, List<String> ontologyIds);
+	Hit<OntologyTerm> findTags(AttributeMetaData attribute, List<String> ontologyIds);
 
 }

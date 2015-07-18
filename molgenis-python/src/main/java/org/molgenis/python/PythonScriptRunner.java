@@ -12,10 +12,10 @@ import java.util.UUID;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.FileWriterWithEncoding;
+import org.molgenis.file.FileStore;
 import org.molgenis.script.Script;
 import org.molgenis.script.ScriptRunner;
 import org.molgenis.script.ScriptRunnerFactory;
-import org.molgenis.util.FileStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
@@ -33,13 +33,12 @@ public class PythonScriptRunner implements ScriptRunner
 	private final FreeMarkerConfigurer freeMarkerConfig;
 
 	@Autowired
-	public PythonScriptRunner(PythonScriptExecutor pythonScriptExecutor, FileStore fileStore, FreeMarkerConfigurer freeMarkerConfig,
-			ScriptRunnerFactory scriptRunnerFactory)
+	public PythonScriptRunner(PythonScriptExecutor pythonScriptExecutor, FileStore fileStore,
+			FreeMarkerConfigurer freeMarkerConfig, ScriptRunnerFactory scriptRunnerFactory)
 	{
 		this.pythonScriptExecutor = pythonScriptExecutor;
 		this.fileStore = fileStore;
 		this.freeMarkerConfig = freeMarkerConfig;
-		scriptRunnerFactory.registerScriptExecutor("python", this);
 	}
 
 	/**
@@ -95,7 +94,8 @@ public class PythonScriptRunner implements ScriptRunner
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	public void runPythonScript(String script, PythonOutputHandler outputHandler) throws FileNotFoundException, IOException
+	public void runPythonScript(String script, PythonOutputHandler outputHandler) throws FileNotFoundException,
+			IOException
 	{
 		String scriptName = generateRandomPythonScriptName();
 		File file = fileStore.getFile(scriptName);

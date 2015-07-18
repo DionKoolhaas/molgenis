@@ -1,7 +1,7 @@
 <#include "molgenis-header.ftl">
 <#include "molgenis-footer.ftl">
 
-<#assign css=['molgenis-form.css']>
+<#assign css=[]>
 <#assign js=['jquery.validate.min.js', 'scripts.js']>
 
 <@header css js/>
@@ -124,7 +124,7 @@
 		<div class="form-group">
 			<label class="col-md-3 control-label">{{name}}</label>
 			<div class="col-md-9">
-    			<input type="text" name="{{name}}" value="" class="required">
+    			<input type="text" name="{{name}}" value="" class="form-control" required>
     		</div>
 		</div>	
 	{{/each}}

@@ -11,7 +11,7 @@
 <div class="row">
 	<div class="col-md-6">
 		<h1>Mapping projects overview</h1>
-		<p>Create and view mapping projects</p>
+		<p>Create and view mapping projects. <#if importerUri??>Upload additional target entities and mapped sources <a href="${importerUri?html}">here</a>.</#if></p>
 		
 		<#if entityMetaDatas?has_content>
 			<div class="btn-group" role="group">
@@ -36,29 +36,61 @@
 	 			</thead>
 	 			<tbody>
 	 				<#list mappingProjects as project>
-	 				<tr>	
-	 					<td>
-	 						<#if user==project.owner.username || admin>
-		 						<form method="post" action="${context_url}/removeMappingProject" class="pull-left verify">
-									<input type="hidden" name="mappingProjectId" value="${project.identifier}"/>
-									<button type="submit" class="btn btn-danger btn-xs"><span class="glyphicon glyphicon-trash"></span></button>
-								</form>
-							</#if>
-	 					</td> 					
-	 					<td>
-	 						<a href="${context_url}/mappingproject/${project.identifier}">${project.name?html}</a></td>
-	 					<td>${project.owner.username?html}</td>
-	 					<td>
-	 					<#list project.mappingTargets as target>
-	 						${target.name?html}<#if target_has_next>, </#if>
- 						</#list>
- 						</td>
-	 					<td>
-	 					<#list project.mappingTargets[0].entityMappings as mapping>
-	 						${mapping.name}<#if mapping_has_next>, </#if> 
- 						</#list>
-	 					</td>	
-	 				</tr>
+						<#assign broken = false>
+						<#if project.mappingTargets[0]??>
+							<#list project.mappingTargets[0].entityMappings as mapping>
+								<#if !mapping.name??><#assign broken = true></#if> 
+							</#list>
+						<#else>
+							<#assign broken = true>
+						</#if>
+
+						<#if broken == false>
+							<tr>	
+			 					<td>
+			 						<#if user==project.owner.username || admin>
+				 						<form method="post" action="${context_url}/removeMappingProject" class="pull-left verify">
+											<input type="hidden" name="mappingProjectId" value="${project.identifier}"/>
+											<button type="submit" class="btn btn-danger btn-xs"><span class="glyphicon glyphicon-trash"></span></button>
+										</form>
+										<form method="post" action="${context_url}/mappingproject/clone" class="pull-left">
+                                            <input type="hidden" name="mappingProjectId" value="${project.identifier?html}"/>
+                                            <button type="submit" class="btn btn-default btn-xs clone-btn"><span class="glyphicon glyphicon-duplicate"></span></button>
+                                        </form>
+									</#if>
+			 					</td> 					
+			 					<td>
+			 						<a href="${context_url}/mappingproject/${project.identifier}">${project.name?html}</a></td>
+			 					<td>${project.owner.username?html}</td>
+			 					<td>
+			 					<#list project.mappingTargets as target>
+			 						${target.name?html}<#if target_has_next>, </#if>
+		 						</#list>
+		 						</td>
+			 					<td>
+			 					<#list project.mappingTargets[0].entityMappings as mapping>
+			 						${mapping.name}<#if mapping_has_next>, </#if> 
+		 						</#list>
+			 					</td>	
+			 				</tr>
+						<#else>
+							<tr class="danger">
+								<td>
+			 						<#if user==project.owner.username || admin>
+				 						<form method="post" action="${context_url}/removeMappingProject" class="pull-left verify">
+											<input type="hidden" name="mappingProjectId" value="${project.identifier}"/>
+											<button type="submit" class="btn btn-danger btn-xs"><span class="glyphicon glyphicon-trash"></span></button>
+										</form>
+									</#if>
+			 					</td>
+			 					<td>
+			 						${project.name?html}
+			 					</td>
+			 					<td>${project.owner.username?html}</td>
+			 					<td colspan="2"><b>Broken project: some entities are missing</b></td>
+							</tr>	
+						</#if>
+	 				
 	 				</#list>
 	 			</tbody>
 			</table>

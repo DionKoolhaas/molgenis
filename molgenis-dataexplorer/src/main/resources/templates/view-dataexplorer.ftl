@@ -4,7 +4,6 @@
 <#assign css=[
 	"jquery.molgenis.tree.css",
 	"ui.fancytree.min.css",
-	"bootstrap-switch.min.css",
 	"dataexplorer.css",
 	"dataexplorer-filter.css",
 	"diseasematcher.css"]>
@@ -15,10 +14,10 @@
 	"dataexplorer-filter-wizard.js",
 	"jquery.fancytree.min.js",
 	"jquery.molgenis.tree.js",
-	"bootstrap-switch.min.js",
 	"jquery.molgenis.xrefmrefsearch.js",
 	"dataexplorer.js",
-	"bootbox.min.js"]>
+	"bootbox.min.js",
+	"jQEditRangeSlider-min.js"]>
 
 <@header css js/>
 <div class="row">
@@ -48,7 +47,7 @@
                                 <button class="btn btn-danger dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
                                     Delete <span class="caret"></span>
                                 </button>
-                                <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+                                <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1">
                                     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" id="delete-data-btn">Data</a></li>
                                     <li role="presentation"><a role="menuitem" tabindex="-1" href="#" id="delete-data-metadata-btn">Data and meta data</a></li>
                                 </ul>
@@ -82,8 +81,8 @@
 			</div>
 			<div class="row">
                 <div class="col-md-12">
-    			    <div class="panel">
-                        <div class="panel-heading">
+    			    <div class="panel panel-primary">
+                    	<div class="panel-heading">
                             <h4 class="panel-title"> ${i18n.dataexplorer_data_data_item_filters}</h4>
                         </div>
                         <div class="panel-body">
@@ -103,7 +102,7 @@
 			</div>
 			<div class="row"<#if hideDataItemSelect == true> style="display:none"</#if>>
                 <div class="col-md-12">
-                    <div class="panel">
+                    <div class="panel panel-primary">
                         <div class="panel-heading">
                             <h4 class="panel-title">Data item selection</h4>
                         </div>

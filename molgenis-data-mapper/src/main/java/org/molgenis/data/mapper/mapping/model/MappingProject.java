@@ -45,8 +45,17 @@ public class MappingProject
 		this.mappingTargets = new LinkedHashMap<String, MappingTarget>();
 		for (MappingTarget mappingTarget : mappingTargets)
 		{
-			this.mappingTargets.put(mappingTarget.getTarget().getName(), mappingTarget);
+			if (mappingTarget != null)
+			{
+				this.mappingTargets.put(mappingTarget.getTarget().getName(), mappingTarget);
+			}
 		}
+	}
+
+	public void removeIdentifiers()
+	{
+		this.identifier = null;
+		mappingTargets.values().forEach(MappingTarget::removeIdentifiers);
 	}
 
 	public String getIdentifier()

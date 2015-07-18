@@ -4,10 +4,35 @@
 	<parent>
 		<groupId>org.molgenis</groupId>
 		<artifactId>molgenis</artifactId>
-		<version>1.6.0-SNAPSHOT</version>
+		<version>1.9.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>molgenis-js</artifactId>
 
+	<build>
+		<plugins>
+			<!-- minify css/js -->
+			<plugin>
+				<groupId>com.samaxes.maven</groupId>
+				<artifactId>minify-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+	
+	<reporting>
+    	<plugins>
+        	<plugin>
+            	<groupId>com.phasebash.jsdoc</groupId>
+            	<artifactId>jsdoc3-maven-plugin</artifactId>
+            	<version>1.1.0</version>
+            	<configuration>
+                	<sourceFiles>
+                    	<sourceFile>src/main/resources/js/molgenis-script-evaluator.js</sourceFile>
+                	</sourceFiles>
+            	</configuration>
+        	</plugin>
+    	</plugins>
+	</reporting>
+	
 	<dependencies>
 		<dependency>
 			<groupId>org.molgenis</groupId>
@@ -15,9 +40,9 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-    <groupId>org.mozilla</groupId>
-    <artifactId>rhino</artifactId>
-    <version>1.7R5</version>
-</dependency>
+			<groupId>org.mozilla</groupId>
+			<artifactId>rhino</artifactId>
+			<version>1.7R5</version>
+		</dependency>
 	</dependencies>
 </project>

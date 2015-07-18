@@ -1,5 +1,6 @@
 $.when( $, 
-		window.top.molgenis = window.top.molgenis || {}, $.get('/menu/main/dataexplorer/settings')
+		window.top.molgenis = window.top.molgenis || {}, 
+		$.get('dataexplorer/settings') 
 ).then(
 function($, molgenis, settingsXhr) {	
 	"use strict";
@@ -7,7 +8,8 @@ function($, molgenis, settingsXhr) {
 	
 	// module api
 	self.getSelectedEntityMeta = getSelectedEntityMeta;
-	self.getSelectedAttributes = getSelectedAttributes; 
+	self.getSelectedAttributes = getSelectedAttributes;
+	self.getSelectedAttributesTree = getSelectedAttributesTree;
 	self.getEntityQuery = getEntityQuery;
     self.createHeader = createHeader;
     self.setGenomeAttributes = setGenomeAttributes;
@@ -20,6 +22,7 @@ function($, molgenis, settingsXhr) {
 	var selectedEntityMetaData = null;
 	var attributeFilters = {};
 	var selectedAttributes = [];
+	var selectedAttributesTree = {};
 	var searchQuery = null;
 	var modules = [];
 
@@ -61,6 +64,13 @@ function($, molgenis, settingsXhr) {
 	/**
 	 * @memberOf molgenis.dataexplorer
 	 */
+	function getSelectedAttributesTree() {
+		return selectedAttributesTree;
+	}
+	
+	/**
+	 * @memberOf molgenis.dataexplorer
+	 */
 	function getEntityQuery() {
 		// N.B. There's a translation step between the query in the state, which is also shown on screen
 		// ("SEARCH 1:10050001") and the actual entity query which is used when retrieving data
@@ -74,11 +84,15 @@ function($, molgenis, settingsXhr) {
 	 */
 	function createModuleNav(modules, entity, container) {
 		var items = [];
-		items.push('<ul class="nav nav-tabs pull-left" role="tablist">');
+		items.push('<ul class="nav nav-tabs pull-left" style="width: 100%" role="tablist">');
 		$.each(modules, function() {
 			var href = molgenis.getContextUrl() + '/module/' + this.id+'?entity=' + entity;
 			items.push('<li data-id="' + this.id + '"><a href="' + href + '" data-target="#tab-' + this.id + '" data-id="' + this.id + '" role="tab" data-toggle="tab"><img src="/img/' + this.icon + '"> ' + this.label + '</a></li>');
 		});
+        items.push('<li class="pull-right">');
+        items.push('<button type="button" class="btn btn-default" id="toggleSelectors">')+
+        items.push('<span id="toggleSelectorsIcon" class="glyphicon glyphicon-resize-horizontal"></span>')+
+        items.push('</button></li>');
 		items.push('</ul>');
 		items.push('<div class="tab-content">');
 		$.each(modules, function() {
@@ -100,7 +114,12 @@ function($, molgenis, settingsXhr) {
 			'selectedAttributes' : attributes,
 			'onAttributesSelect' : function(selects) {
 				selectedAttributes = container.tree('getSelectedAttributes');
-				$(document).trigger('changeAttributeSelection', {'attributes': selectedAttributes, 'totalNrAttributes': Object.keys(entityMetaData.attributes).length});
+				selectedAttributesTree = container.tree('getSelectedAttributesTree') 
+				$(document).trigger('changeAttributeSelection', {
+					'attributes' : selectedAttributes,
+					'attributesTree' : selectedAttributesTree,
+					'totalNrAttributes' : Object.keys(entityMetaData.attributes).length
+				});
 			},
 			'onAttributeClick' : function(attribute) {
 				$(document).trigger('clickAttribute', {'attribute': attribute});
@@ -276,9 +295,30 @@ function($, molgenis, settingsXhr) {
 			selectedAttributes = $.map(entityMetaData.attributes, function(attribute) {
 				if(state.attrs === undefined || state.attrs === null) return attribute.fieldType !== 'COMPOUND' ? attribute : null;
 				else if(state.attrs === 'none') return null;
-				else return state.attrs.indexOf(attribute.name) !== -1 && attribute.fieldType !== 'COMPOUND' ? attribute : null;
+				else {
+					// TODO elegant solution
+					for(var i = 0; i < state.attrs.length; ++i) {
+						var attrName = state.attrs[i]; 
+						if(attrName.indexOf('(') !== -1) {
+							attrName = attrName.substring(0, attrName.indexOf('('));
+							attribute.expanded = true;
+						} else {
+							attribute.expanded = false;
+						}
+						if(attribute.name === attrName) {
+							return attribute.fieldType !== 'COMPOUND' ? attribute : null;
+						}
+					}
+					return null;
+				}
 			});
 			
+			selectedAttributesTree = {};
+			for(var i = 0; i < selectedAttributes.length; ++i) {
+				var key = selectedAttributes[i].name;
+				var value = selectedAttributes[i].expanded === true ? {'*': null} : null;
+				selectedAttributesTree[key] = value;	
+			}
 			createEntityMetaTree(entityMetaData, selectedAttributes);
 			
 			//Show wizard on show of dataexplorer if url param 'wizard=true' is added
@@ -365,15 +405,14 @@ function($, molgenis, settingsXhr) {
 		// lazy load tab contents
 		$(document).on('show.bs.tab', 'a[data-toggle="tab"]', function(e) {
 			var target = $($(e.target).attr('data-target')), entityHref = encodeURI($(e.target).attr('href'));
-			
 			if(target.data('status') !== 'loaded') {
 				target.load(entityHref, function() {
-					target.data('status', 'loaded');
-				});
+ 					target.data('status', 'loaded');
+ 				});
 			}
 		});
-		
-		$(document).on('changeQuery', function(e, query) {
+
+        $(document).on('changeQuery', function(e, query) {
 			state.query = query;
 			pushState();
 		});
@@ -392,7 +431,7 @@ function($, molgenis, settingsXhr) {
 			attributeFilters = {};
 			selectedAttributes = [];
 			searchQuery = null;
-			
+			React.unmountComponentAtNode($('#data-table-container')[0]); // must occur before mod-data is loaded
 			$('#feature-filters p').remove();
 			$("#observationset-search").val("");
 			$('#data-table-pager').empty();
@@ -444,7 +483,8 @@ function($, molgenis, settingsXhr) {
 		});
 		
 		$(document).on('clickAttribute', function(e, data) {
-			if(data.attribute.fieldType !== 'COMPOUND')
+			var attr = data.attribute;
+			if(attr.fieldType !== 'COMPOUND' && (!attr.refEntity || !attr.parent))
 				self.filter.dialog.openFilterModal(data.attribute, attributeFilters[data.attribute.href]);
 		});
 		
@@ -500,9 +540,7 @@ function($, molgenis, settingsXhr) {
 			bootbox.confirm("Are you sure you want to delete all data and metadata for this entity?", function(confirmed){
 				if(confirmed){
 					$.ajax('/api/v1/'+selectedEntityMetaData.name+'/meta', {'type': 'DELETE'}).done(function(){
-						$.post(molgenis.getContextUrl() + '/removeEntityFromMenu/' + selectedEntityMetaData.name).done(function(){
-							document.location.href = "/menu/main/dataexplorer";
-						});
+						document.location.href = "/menu/main/dataexplorer";
 					});
 				}
 			});

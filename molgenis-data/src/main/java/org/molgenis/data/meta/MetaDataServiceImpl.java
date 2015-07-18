@@ -22,13 +22,10 @@ import org.molgenis.data.support.DefaultEntityMetaData;
 import org.molgenis.data.support.NonDecoratingRepositoryDecoratorFactory;
 import org.molgenis.security.core.runas.RunAsSystemProxy;
 import org.molgenis.util.DependencyResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -40,8 +37,6 @@ import com.google.common.collect.Sets;
  */
 public class MetaDataServiceImpl implements MetaDataService
 {
-	private static final Logger LOG = LoggerFactory.getLogger(MetaDataServiceImpl.class);
-
 	private PackageRepository packageRepository;
 	private EntityMetaDataRepository entityMetaDataRepository;
 	private AttributeMetaDataRepository attributeMetaDataRepository;
@@ -52,7 +47,6 @@ public class MetaDataServiceImpl implements MetaDataService
 	public MetaDataServiceImpl(DataServiceImpl dataService)
 	{
 		this.dataService = dataService;
-		dataService.setMetaDataService(this);
 	}
 
 	/**
@@ -69,13 +63,19 @@ public class MetaDataServiceImpl implements MetaDataService
 		this.defaultBackend = backend;
 		backends.put(backend.getName(), backend);
 
+		PackageMetaData.INSTANCE.setBackend(backend.getName());
+		TagMetaData.INSTANCE.setBackend(backend.getName());
+		EntityMetaDataMetaData.INSTANCE.setBackend(backend.getName());
+		AttributeMetaDataMetaData.INSTANCE.setBackend(backend.getName());
+
 		bootstrapMetaRepos();
 		return this;
 	}
 
 	private void bootstrapMetaRepos()
 	{
-		Repository tagRepo = defaultBackend.addEntityMeta(new TagMetaData());
+
+		Repository tagRepo = defaultBackend.addEntityMeta(TagMetaData.INSTANCE);
 		dataService.addRepository(tagRepo);
 
 		Repository packages = defaultBackend.addEntityMeta(PackageRepository.META_DATA);
@@ -98,6 +98,12 @@ public class MetaDataServiceImpl implements MetaDataService
 		return defaultBackend;
 	}
 
+	@Override
+	public RepositoryCollection getBackend(String name)
+	{
+		return backends.get(name);
+	}
+
 	/**
 	 * Removes entity meta data if it exists.
 	 */
@@ -105,16 +111,13 @@ public class MetaDataServiceImpl implements MetaDataService
 	@Override
 	public void deleteEntityMeta(String entityName)
 	{
-		if (dataService.hasRepository(entityName)) dataService.removeRepository(entityName);
 		EntityMetaData emd = getEntityMetaData(entityName);
-		if (emd != null)
+		if ((emd != null) && !emd.isAbstract())
 		{
-			entityMetaDataRepository.delete(entityName);
-			if (!emd.isAbstract())
-			{
-				getManageableRepositoryCollection(emd).deleteEntityMeta(entityName);
-			}
+			getManageableRepositoryCollection(emd).deleteEntityMeta(entityName);
 		}
+		entityMetaDataRepository.delete(entityName);
+		if (dataService.hasRepository(entityName)) dataService.removeRepository(entityName);
 	}
 
 	@Transactional
@@ -140,14 +143,15 @@ public class MetaDataServiceImpl implements MetaDataService
 
 	private ManageableRepositoryCollection getManageableRepositoryCollection(EntityMetaData emd)
 	{
-		RepositoryCollection backend = getRepositoryCollection(emd);
+		RepositoryCollection backend = getBackend(emd);
 		if (!(backend instanceof ManageableRepositoryCollection)) throw new RuntimeException(
 				"Backend  is not a ManageableCrudRepositoryCollection");
 
 		return (ManageableRepositoryCollection) backend;
 	}
 
-	private RepositoryCollection getRepositoryCollection(EntityMetaData emd)
+	@Override
+	public RepositoryCollection getBackend(EntityMetaData emd)
 	{
 		String backendName = emd.getBackend() == null ? getDefaultBackend().getName() : emd.getBackend();
 		RepositoryCollection backend = backends.get(backendName);
@@ -160,7 +164,9 @@ public class MetaDataServiceImpl implements MetaDataService
 	@Override
 	public Repository add(EntityMetaData emd, RepositoryDecoratorFactory decoratorFactory)
 	{
-		RepositoryCollection backend = getRepositoryCollection(emd);
+
+		MetaValidationUtils.validateEntityMetaData(emd);
+		RepositoryCollection backend = getBackend(emd);
 
 		if (getEntityMetaData(emd.getName()) != null)
 		{
@@ -211,6 +217,8 @@ public class MetaDataServiceImpl implements MetaDataService
 	@Override
 	public void addAttribute(String fullyQualifiedEntityName, AttributeMetaData attr)
 	{
+		MetaValidationUtils.validateName(attr.getName());
+
 		EntityMetaData emd = entityMetaDataRepository.addAttribute(fullyQualifiedEntityName, attr);
 		getManageableRepositoryCollection(emd).addAttribute(fullyQualifiedEntityName, attr);
 	}
@@ -218,6 +226,8 @@ public class MetaDataServiceImpl implements MetaDataService
 	@Override
 	public void addAttributeSync(String fullyQualifiedEntityName, AttributeMetaData attr)
 	{
+		MetaValidationUtils.validateName(attr.getName());
+
 		EntityMetaData emd = entityMetaDataRepository.addAttribute(fullyQualifiedEntityName, attr);
 		getManageableRepositoryCollection(emd).addAttributeSync(fullyQualifiedEntityName, attr);
 	}
@@ -236,6 +246,7 @@ public class MetaDataServiceImpl implements MetaDataService
 	@Override
 	public void addPackage(Package p)
 	{
+		MetaValidationUtils.validateName(p.getName());
 		packageRepository.add(p);
 	}
 
@@ -282,7 +293,10 @@ public class MetaDataServiceImpl implements MetaDataService
 	public void refreshCaches()
 	{
 		packageRepository.updatePackageCache();
-		RunAsSystemProxy.runAsSystem(()->{entityMetaDataRepository.fillEntityMetaDataCache();return null;});
+		RunAsSystemProxy.runAsSystem(() -> {
+			entityMetaDataRepository.fillEntityMetaDataCache();
+			return null;
+		});
 	}
 
 	@Transactional
@@ -352,22 +366,7 @@ public class MetaDataServiceImpl implements MetaDataService
 
 	public void addToEntityMetaDataRepository(EntityMetaData entityMetaData)
 	{
+		MetaValidationUtils.validateEntityMetaData(entityMetaData);
 		entityMetaDataRepository.add(entityMetaData);
-
-		// add attribute metadata
-		for (AttributeMetaData att : entityMetaData.getAttributes())
-		{
-			if (LOG.isTraceEnabled())
-			{
-				LOG.trace("Adding attribute metadata for entity " + entityMetaData.getName() + ", attribute "
-						+ att.getName());
-			}
-
-			if ((entityMetaData.getExtends() == null)
-					|| !Iterables.contains(entityMetaData.getExtends().getAtomicAttributes(), att))
-			{
-				attributeMetaDataRepository.add(att);
-			}
-		}
 	}
 }

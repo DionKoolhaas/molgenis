@@ -3,32 +3,26 @@ package org.molgenis.data.annotation.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.molgenis.MolgenisFieldTypes.FieldTypeEnum;
+import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.Entity;
-import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.annotation.AnnotationService;
-import org.molgenis.data.annotation.AnnotatorUtils;
-import org.molgenis.data.annotation.TabixReader;
 import org.molgenis.data.annotation.VariantAnnotator;
-import org.molgenis.data.annotation.VcfUtils;
-import org.molgenis.data.support.AnnotationServiceImpl;
+import org.molgenis.data.annotation.entity.AnnotatorInfo;
+import org.molgenis.data.annotation.entity.AnnotatorInfo.Status;
+import org.molgenis.data.annotation.entity.AnnotatorInfo.Type;
+import org.molgenis.data.annotation.utils.AnnotatorUtils;
+import org.molgenis.data.annotator.tabix.TabixReader;
 import org.molgenis.data.support.DefaultAttributeMetaData;
-import org.molgenis.data.support.DefaultEntityMetaData;
-import org.molgenis.data.support.MapEntity;
 import org.molgenis.data.vcf.VcfRepository;
+import org.molgenis.data.vcf.utils.VcfUtils;
 import org.molgenis.framework.server.MolgenisSettings;
 import org.molgenis.framework.server.MolgenisSimpleSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 /**
@@ -54,10 +48,19 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 	private static final Logger LOG = LoggerFactory.getLogger(GoNLServiceAnnotator.class);
 
 	private final MolgenisSettings molgenisSettings;
-	private final AnnotationService annotatorService;
 
-	public static final String GONL_MAF = "GONL_MAF";
-	public static final String GONL_GTC = "GONL_GTC";
+	@Override
+	public AnnotatorInfo getInfo()
+	{
+		return AnnotatorInfo.create(Status.BETA, Type.POPULATION_REFERENCE, "gonl", "no description",
+				getOutputMetaData());
+	}
+
+	public static final String GONL_MAF_LABEL = "GONLMAF";
+	public static final String GONL_GTC_LABEL = "GONLGTC";
+
+	public static final String GONL_MAF = VcfRepository.getInfoPrefix() + GONL_MAF_LABEL;
+	public static final String GONL_GTC = VcfRepository.getInfoPrefix() + GONL_GTC_LABEL;
 
 	private static final String NAME = "GONL";
 
@@ -80,7 +83,6 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 			throws IOException
 	{
 		this.molgenisSettings = molgenisSettings;
-		this.annotatorService = annotatorService;
 	}
 
 	public GoNLServiceAnnotator(File gonlR5directory, File inputVcfFile, File outputVCFFile) throws Exception
@@ -89,8 +91,6 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 		this.molgenisSettings = new MolgenisSimpleSettings();
 		molgenisSettings.setProperty(GONL_DIRECTORY_LOCATION_PROPERTY, gonlR5directory.getAbsolutePath());
 
-		this.annotatorService = new AnnotationServiceImpl();
-
 		getTabixReaders();
 
 		PrintWriter outputVCFWriter = new PrintWriter(outputVCFFile, "UTF-8");
@@ -98,7 +98,7 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 		VcfRepository vcfRepo = new VcfRepository(inputVcfFile, this.getClass().getName());
 		Iterator<Entity> vcfIter = vcfRepo.iterator();
 
-		VcfUtils.checkPreviouslyAnnotatedAndAddMetadata(inputVcfFile, outputVCFWriter, infoFields,
+		VcfUtils.checkPreviouslyAnnotatedAndAddMetadata(inputVcfFile, outputVCFWriter, getOutputMetaData(),
 				GONL_MAF.substring(VcfRepository.getInfoPrefix().length()));
 
 		System.out.println("Now starting to process the data.");
@@ -127,12 +127,6 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 		outputVCFWriter.close();
 		vcfRepo.close();
 		System.out.println("All done!");
-	}
-
-	@Override
-	public void onApplicationEvent(ContextRefreshedEvent event)
-	{
-		annotatorService.addAnnotator(this);
 	}
 
 	@Override
@@ -225,6 +219,7 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 		{
 			LOG.info("No data for CHROM: " + inputChromosome + " POS: " + inputPosition + " REF: " + inputReference
 					+ " ALT: " + inputAlternative + " LINE: " + line);
+			// throw sfx;
 		}
 
 		// if nothing found, return empty list for no hit
@@ -303,7 +298,6 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 
 		}
 
-		// FIXME: actually, they should also be inside INFO compound attribute!!
 		resultMap.put(GONL_GTC, gtc);
 		resultMap.put(GONL_MAF, maf);
 		return resultMap;
@@ -311,13 +305,12 @@ public class GoNLServiceAnnotator extends VariantAnnotator
 	}
 
 	@Override
-	public EntityMetaData getOutputMetaData()
+	public List<AttributeMetaData> getOutputMetaData()
 	{
-		DefaultEntityMetaData metadata = new DefaultEntityMetaData(this.getClass().getName(), MapEntity.class);
+		List<AttributeMetaData> metadata = new ArrayList<>();
 
-		metadata.addAttributeMetaData(new DefaultAttributeMetaData(GONL_MAF, FieldTypeEnum.DECIMAL));
-		metadata.addAttributeMetaData(new DefaultAttributeMetaData(GONL_GTC, FieldTypeEnum.STRING)); // FIXME: correct
-																										// type?
+		metadata.add(new DefaultAttributeMetaData(GONL_MAF, FieldTypeEnum.DECIMAL).setLabel(GONL_MAF_LABEL));
+		metadata.add(new DefaultAttributeMetaData(GONL_GTC, FieldTypeEnum.STRING).setLabel(GONL_GTC_LABEL));
 
 		return metadata;
 	}
